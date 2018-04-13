@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/rancher/utils"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/config"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +32,8 @@ const grbByUserRefKey = "auth.management.cattle.io/grb-by-user-ref"
 const tokenByUserRefKey = "auth.management.cattle.io/token-by-user-ref"
 
 func newUserLifecycle(management *config.ManagementContext) *userLifecycle {
+	utils.Myprint(management, "test")
+	defer utils.Exit(utils.Enter())
 	lfc := &userLifecycle{
 		prtb:       management.Management.ProjectRoleTemplateBindings(""),
 		crtb:       management.Management.ClusterRoleTemplateBindings(""),
