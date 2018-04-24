@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	"github.com/rancher/norman/api/access"
 	"github.com/rancher/norman/api/handler"
 	"github.com/rancher/norman/httperror"
@@ -16,9 +20,6 @@ import (
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/client/management/v3"
 	"github.com/robfig/cron"
-	"io/ioutil"
-	"net/http"
-	"time"
 )
 
 type Handler struct {
@@ -219,7 +220,7 @@ func (h *Handler) run(apiContext *types.APIContext) error {
 			return httperror.NewAPIError(httperror.InvalidBodyContent, "Error branch is not specified for the pipeline to run")
 		}
 	} else {
-		branch = ""
+		runPipelineInput.Branch = ""
 	}
 
 	userName := apiContext.Request.Header.Get("Impersonate-User")
