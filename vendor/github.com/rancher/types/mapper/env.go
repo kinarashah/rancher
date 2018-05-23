@@ -3,6 +3,7 @@ package mapper
 import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
+	//"github.com/rancher/rancher/utils"
 	"k8s.io/api/core/v1"
 )
 
@@ -44,7 +45,7 @@ func (e EnvironmentMapper) FromInternal(data map[string]interface{}) {
 					"source":     "configMap",
 					"sourceName": envVar.ValueFrom.ConfigMapKeyRef.Name,
 					"sourceKey":  envVar.ValueFrom.ConfigMapKeyRef.Key,
-					"optional":   envVar.ValueFrom.ConfigMapKeyRef.Optional,
+					"optional":   *envVar.ValueFrom.ConfigMapKeyRef.Optional,
 					"targetKey":  envVar.Name,
 				})
 			}
@@ -53,7 +54,7 @@ func (e EnvironmentMapper) FromInternal(data map[string]interface{}) {
 					"source":     "secret",
 					"sourceName": envVar.ValueFrom.SecretKeyRef.Name,
 					"sourceKey":  envVar.ValueFrom.SecretKeyRef.Key,
-					"optional":   envVar.ValueFrom.SecretKeyRef.Optional,
+					"optional":   *envVar.ValueFrom.SecretKeyRef.Optional,
 					"targetKey":  envVar.Name,
 				})
 			}
@@ -67,7 +68,7 @@ func (e EnvironmentMapper) FromInternal(data map[string]interface{}) {
 					"source":     "secret",
 					"sourceName": envVar.SecretRef.Name,
 					"prefix":     envVar.Prefix,
-					"optional":   envVar.SecretRef.Optional,
+					"optional":   *envVar.SecretRef.Optional,
 					"type":       "/v3/project/schemas/environmentFrom",
 				})
 			}
@@ -76,7 +77,7 @@ func (e EnvironmentMapper) FromInternal(data map[string]interface{}) {
 					"source":     "configMap",
 					"sourceName": envVar.ConfigMapRef.Name,
 					"prefix":     envVar.Prefix,
-					"optional":   envVar.ConfigMapRef.Optional,
+					"optional":   *envVar.ConfigMapRef.Optional,
 					"type":       "/v3/project/schemas/environmentFrom",
 				})
 			}
@@ -92,6 +93,9 @@ func (e EnvironmentMapper) FromInternal(data map[string]interface{}) {
 	if len(envFromMaps) > 0 {
 		data["environmentFrom"] = envFromMaps
 	}
+
+	//utils.Myprint(data["environment"], "env")
+	//utils.Myprint(data["environmentFrom"], "envFrom")
 }
 
 func (e EnvironmentMapper) ToInternal(data map[string]interface{}) {
@@ -187,6 +191,9 @@ func (e EnvironmentMapper) ToInternal(data map[string]interface{}) {
 	delete(data, "environmentFrom")
 	data["env"] = envVar
 	data["envFrom"] = envVarFrom
+
+	//utils.Myprint(data["env"], "env to")
+	//utils.Myprint(data["envFrom"], "envFrom to")
 }
 
 func (e EnvironmentMapper) ModifySchema(schema *types.Schema, schemas *types.Schemas) error {
