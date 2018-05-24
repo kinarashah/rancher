@@ -229,6 +229,7 @@ func nodeTypes(schemas *types.Schemas) *types.Schemas {
 			clusterField := schema.ResourceFields["clusterId"]
 			clusterField.Type = "reference[cluster]"
 			schema.ResourceFields["clusterId"] = clusterField
+			schema.ResourceActions["cordon"] = types.Action{}
 		}, struct {
 			PublicEndpoints string `json:"publicEndpoints" norman:"type=array[publicEndpoint],nocreate,noupdate"`
 		}{}).
