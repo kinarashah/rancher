@@ -3,13 +3,20 @@ package app
 import (
 	"bytes"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 
 	"github.com/rancher/types/config"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/cert"
+)
+
+const (
+	cattleSystemNamespace = "cattle-system"
+	selfSignedSecretName  = "tls-rancher"
 )
 
 func addListenConfig(management *config.ManagementContext, cfg Config) error {
@@ -86,26 +93,26 @@ func addListenConfig(management *config.ManagementContext, cfg Config) error {
 		}
 	}
 
-	if selfSigned {
-		data := map[string]string{}
-		data["tls.key"] = cfg.ListenConfig.CAKey
-		data["tls.crt"] = cfg.ListenConfig.CACert
+	ns, err := management.Core.Namespaces("").List(v1.ListOptions{})
+	ans, _ := json.Marshal(ns)
+	logrus.Infof("printing namespaces %s", string(ans))
 
-		secret := &corev1.Secret{
-			StringData: data,
-			Type:       corev1.SecretTypeTLS,
-		}
-		secret.Name = "tls-rancher"
-		secret.Namespace = "cattle-system"
-
-		if _, err := management.Core.Secrets("cattle-system").Get("tls-rancher", v1.GetOptions{}); apierrors.IsNotFound(err) {
-			_, err = management.Core.Secrets("cattle-system").Create(secret)
-			return err
-		}
-
-		_, err = management.Core.Secrets("cattle-system").Update(secret)
+	if !selfSigned {
+		return nil
+	}
+	data := map[string]string{}
+	data["tls.key"] = cfg.ListenConfig.CAKey
+	data["tls.crt"] = cfg.ListenConfig.CACert
+	secret := &corev1.Secret{
+		StringData: data,
+		Type:       corev1.SecretTypeTLS,
+	}
+	secret.Name = selfSignedSecretName
+	secret.Namespace = cattleSystemNamespace
+	if _, err := management.Core.Secrets(cattleSystemNamespace).Get("tls-rancher", v1.GetOptions{}); apierrors.IsNotFound(err) {
+		_, err = management.Core.Secrets(cattleSystemNamespace).Create(secret)
 		return err
 	}
-
-	return nil
+	_, err = management.Core.Secrets(cattleSystemNamespace).Update(secret)
+	return err
 }
