@@ -105,6 +105,11 @@ func (n *nsLifecycle) assignToSystemProject(ns *v1.Namespace) error {
 	for projectDisplayName, namespaces := range defaultProjectsToNamespaces {
 		for _, nsToCheck := range namespaces {
 			if nsToCheck == ns.Name {
+				projectID := ns.Annotations[projectIDAnnotation]
+				if projectID != "" {
+					return nil
+				}
+
 				projects, err := n.m.projectLister.List(n.m.clusterName, labels.NewSelector())
 				if err != nil {
 					return err
@@ -118,11 +123,6 @@ func (n *nsLifecycle) assignToSystemProject(ns *v1.Namespace) error {
 				}
 				if project == nil {
 					continue
-				}
-
-				projectID := ns.Annotations[projectIDAnnotation]
-				if projectID != "" {
-					return nil
 				}
 
 				if ns.Annotations == nil {

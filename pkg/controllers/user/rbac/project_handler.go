@@ -85,7 +85,9 @@ func (p *pLifecycle) Remove(project *v3.Project) (*v3.Project, error) {
 
 func (p *pLifecycle) ensureNamespacesAssigned(project *v3.Project) error {
 	if _, ok := project.Labels["authz.management.cattle.io/default-project"]; !ok {
-		return nil
+		if _, ok := project.Labels["authz.management.cattle.io/system-project"]; !ok {
+			return nil
+		}
 	}
 
 	cluster, err := p.m.clusterLister.Get("", p.m.clusterName)
@@ -102,7 +104,7 @@ func (p *pLifecycle) ensureNamespacesAssigned(project *v3.Project) error {
 			return err
 		}
 	case "System":
-		if err = p.ensureDefaultNamespaceAssigned(cluster, project); err != nil {
+		if err = p.ensureSystemNamespaceAssigned(cluster, project); err != nil {
 			return err
 		}
 	}
@@ -158,7 +160,7 @@ func GetDefaultProjectsToNamespaces() (map[string][]string, error) {
 	systemNamespacesStr := settings.SystemNamespaces.Get()
 	var systemNamespaces []string
 	if systemNamespacesStr == "" {
-		return nil, fmt.Errorf("failed to load setting %s", settings.SystemNamespaces)
+		return nil, fmt.Errorf("failed to load setting %v", settings.SystemNamespaces)
 	}
 
 	splitted := strings.Split(systemNamespacesStr, ",")
