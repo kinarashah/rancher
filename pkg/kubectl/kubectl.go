@@ -51,6 +51,10 @@ func Drain(kubeConfig *clientcmdapi.Config, nodeName string) ([]byte, error) {
 	}
 	defer os.Remove(kubeConfigFile.Name())
 
+	if err := clientcmd.WriteToFile(*kubeConfig, kubeConfigFile.Name()); err != nil {
+		return nil, err
+	}
+
 	cmd := exec.Command("kubectl",
 		"--kubeconfig",
 		kubeConfigFile.Name(),

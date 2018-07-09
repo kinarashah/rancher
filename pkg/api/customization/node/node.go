@@ -61,19 +61,19 @@ type ActionWrapper struct{}
 func (a ActionWrapper) ActionHandler(actionName string, action *types.Action, apiContext *types.APIContext) error {
 	switch actionName {
 	case "cordon":
-		return cordonUncordonNode("drain", apiContext, true)
+		return cordonUncordonDrainNode("drain", apiContext, true)
 
 	case "uncordon":
-		return cordonUncordonNode(actionName, apiContext, false)
+		return cordonUncordonDrainNode(actionName, apiContext, false)
 
 	default:
-		return cordonUncordonNode(actionName, apiContext, true)
+		return cordonUncordonDrainNode(actionName, apiContext, true)
 	}
 
 	return nil
 }
 
-func cordonUncordonNode(actionName string, apiContext *types.APIContext, cordon bool) error {
+func cordonUncordonDrainNode(actionName string, apiContext *types.APIContext, cordon bool) error {
 	logrus.Info("entered!")
 	node, schema, err := getNodeAndSchema(apiContext)
 	if err != nil {
