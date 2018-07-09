@@ -20,6 +20,7 @@ import (
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	managementschema "github.com/rancher/types/apis/management.cattle.io/v3/schema"
 	"github.com/rancher/types/client/management/v3"
+	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -60,30 +61,46 @@ type ActionWrapper struct{}
 func (a ActionWrapper) ActionHandler(actionName string, action *types.Action, apiContext *types.APIContext) error {
 	switch actionName {
 	case "cordon":
-		return cordonUncordonNode(actionName, apiContext, true)
+		return cordonUncordonNode("drain", apiContext, true)
 
 	case "uncordon":
 		return cordonUncordonNode(actionName, apiContext, false)
+
+	default:
+		return cordonUncordonNode(actionName, apiContext, true)
 	}
 
 	return nil
 }
 
 func cordonUncordonNode(actionName string, apiContext *types.APIContext, cordon bool) error {
-	var node map[string]interface{}
-	if err := access.ByID(apiContext, apiContext.Version, apiContext.Type, apiContext.ID, &node); err != nil {
-		return httperror.NewAPIError(httperror.InvalidReference, "Error accessing node")
+	logrus.Info("entered!")
+	node, schema, err := getNodeAndSchema(apiContext)
+	if err != nil {
+		return err
 	}
-	schema := apiContext.Schemas.Schema(&managementschema.Version, client.NodeType)
 	unschedulable := convert.ToBool(values.GetValueN(node, "unschedulable"))
-	if cordon == unschedulable {
+	if cordon == unschedulable && actionName != "drain" {
 		return httperror.NewAPIError(httperror.InvalidAction, fmt.Sprintf("Node %s already %sed", apiContext.ID, actionName))
 	}
-	values.PutValue(node, convert.ToString(!unschedulable), "desiredNodeUnschedulable")
+	if actionName == "drain" {
+		values.PutValue(node, actionName, "desiredNodeUnschedulable")
+	} else {
+		values.PutValue(node, convert.ToString(!unschedulable), "desiredNodeUnschedulable")
+	}
 	if _, err := schema.Store.Update(apiContext, schema, node, apiContext.ID); err != nil && apierrors.IsNotFound(err) {
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("Error updating node %s by %s : %s", apiContext.ID, actionName, err.Error()))
 	}
 	return nil
+}
+
+func getNodeAndSchema(apiContext *types.APIContext) (map[string]interface{}, *types.Schema, error) {
+	var node map[string]interface{}
+	if err := access.ByID(apiContext, apiContext.Version, apiContext.Type, apiContext.ID, &node); err != nil {
+		return nil, nil, httperror.NewAPIError(httperror.InvalidReference, "Error accessing node")
+	}
+	schema := apiContext.Schemas.Schema(&managementschema.Version, client.NodeType)
+	return node, schema, nil
 }
 
 type Handler struct {
