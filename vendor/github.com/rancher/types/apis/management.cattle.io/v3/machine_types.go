@@ -188,6 +188,7 @@ type NodeSpec struct {
 	DesiredNodeLabels        map[string]string `json:"desiredNodeLabels,omitempty"`
 	DesiredNodeAnnotations   map[string]string `json:"desiredNodeAnnotations,omitempty"`
 	DesiredNodeUnschedulable string            `json:"desiredNodeUnschedulable,omitempty"`
+	NodeDrainInput           *NodeDrainInput   `json:"nodeDrainInput,omitempty"`
 }
 
 type NodeCommonParams struct {
@@ -271,4 +272,21 @@ type PublicEndpoint struct {
 	Path     string `json:"path,omitempty" norman:"nocreate,noupdate"`
 	// True when endpoint is exposed on every node
 	AllNodes bool `json:"allNodes" norman:"nocreate,noupdate"`
+}
+
+type NodeDrainInput struct {
+	// Drain node even if there are pods not managed by a ReplicationController, Job, or DaemonSet on it
+	// If there are DaemonSet-managed pods, drain will not proceed without Force set to true
+	Force bool `json:"force,omitempty"`
+	// If there are DaemonSet-managed pods, drain will not proceed without IgnoreDaemonSets set to true
+	// (even when set to true, kubectl won't delete pods - so setting default to true)
+	IgnoreDaemonSets bool `json:"ignoreDaemonSets,omitempty" norman:"default=true"`
+	// Continue even if there are pods using emptyDir
+	DeleteLocalData bool `json:"deleteLocalData,omitempty"`
+	//Period of time in seconds given to each pod to terminate gracefully. If negative, the default value specified in the pod will be used
+	GracePeriod int `json:"gracePeriod,omitempty" norman:"default=-1"`
+	// The length of time to wait before giving up, zero means infinite (// todo: need to decide on time vs handling)
+	Timeout int `json:"timeout" norman:"default=10"`
+	// Selector (label query) to filter on
+	Selector *metav1.LabelSelector `json:"selector"`
 }
