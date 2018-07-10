@@ -288,5 +288,5 @@ type NodeDrainInput struct {
 	// The length of time to wait before giving up, zero means infinite (// todo: need to decide on time vs handling)
 	Timeout int `json:"timeout" norman:"default=10"`
 	// Selector (label query) to filter on
-	Selector *metav1.LabelSelector `json:"selector"`
+	Selector metav1.LabelSelector `json:"selector"`
 }
