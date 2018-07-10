@@ -1,12 +1,14 @@
 package nodesyncer
 
 import (
+	"fmt"
+
 	"encoding/json"
 
 	"github.com/rancher/norman/types/convert"
-	"github.com/rancher/rancher/pkg/kubectl"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -61,9 +63,60 @@ func (d *NodeDrain) drainNode(key string, obj *v3.Node) error {
 		return err
 	}
 	logrus.Infof("token %s", token)
-	kubeConfig := d.kubeConfigGetter.KubeConfig(d.clusterName, token)
-	node, err := kubectl.Drain(kubeConfig, obj.Spec.RequestedHostname)
-	ans, _ := json.Marshal(node)
-	logrus.Infof("node! %s", string(ans))
+	//kubeConfig := d.kubeConfigGetter.KubeConfig(d.clusterName, token)
+	// check for true InsecureSkipTLSVerify
+	//_, err = kubectl.Drain(kubeConfig, getArgs(obj.Spec.RequestedHostname, obj.Spec.NodeDrainInput))
+	flags := getArgs(obj.Spec.RequestedHostname, obj.Spec.NodeDrainInput)
+	ans, _ := json.Marshal(flags)
+	logrus.Info("Flags %s", string(ans))
 	return nil
+	//if err != nil {
+	//	logrus.Info("Kinara error %v", err)
+	//}
+	// ans, _ := json.Marshal(node)
+	// logrus.Infof("node! %s", string(ans))
+	nodeCopy := obj.DeepCopy()
+	nodeCopy.Spec.DesiredNodeUnschedulable = ""
+	// ans, _ = json.Marshal(nodeCopy)
+	// logrus.Infof("nodeCopy! %s", string(ans))
+
+	if _, err := d.machines.Update(nodeCopy); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getArgs(nodeName string, input *v3.NodeDrainInput) []string {
+	flags := []string{
+		fmt.Sprintf("%s", nodeName),
+		fmt.Sprintf("--delete-local-data=%v", input.DeleteLocalData),
+		fmt.Sprintf("--force=%v", true),
+		fmt.Sprintf("--grace-period=%v", input.GracePeriod),
+		fmt.Sprintf("--ignore-daemonsets=%v", input.IgnoreDaemonSets),
+		fmt.Sprintf("--timeout=%s", convert.ToString(input.Timeout)+"s")}
+
+	//input.Selector = &metav1.LabelSelector{MatchLabels: map[string]string{},
+	//	MatchExpressions: []metav1.LabelSelectorRequirement{}}
+
+	if input.Selector != nil {
+		flags = append(flags[1:], fmt.Sprintf("--selector=%s", metav1.FormatLabelSelector(input.Selector)))
+		logrus.Info("not emptyz")
+	}
+
+	return flags
+}
+
+func convertSelectorToString(selector metav1.LabelSelector) string {
+	ans := metav1.FormatLabelSelector(&selector)
+	if &selector == nil {
+		logrus.Info("it's nil")
+	}
+	if len(selector.MatchLabels)+len(selector.MatchExpressions) == 0 {
+		logrus.Info("zerrooo %s", "0")
+	}
+	if len(selector.MatchExpressions) == 0 {
+		logrus.Info("matchExp %v", 0)
+	}
+	logrus.Info("convertSelectorToString %s", ans)
+	return ans
 }

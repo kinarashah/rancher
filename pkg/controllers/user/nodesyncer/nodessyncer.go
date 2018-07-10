@@ -55,6 +55,7 @@ type NodeDrain struct {
 	clusterName          string
 	systemAccountManager *systemaccount.Manager
 	clusterLister        v3.ClusterLister
+	machines             v3.NodeInterface
 }
 
 func Register(cluster *config.UserContext, kubeConfigGetter common.KubeConfigGetter) {
@@ -87,6 +88,7 @@ func Register(cluster *config.UserContext, kubeConfigGetter common.KubeConfigGet
 		clusterName:          cluster.ClusterName,
 		systemAccountManager: systemaccount.NewManager(cluster.Management),
 		clusterLister:        cluster.Management.Management.Clusters("").Controller().Lister(),
+		machines:             cluster.Management.Management.Nodes(cluster.ClusterName),
 	}
 
 	cluster.Core.Nodes("").Controller().AddHandler("nodesSyncer", n.sync)
