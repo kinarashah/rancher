@@ -3,12 +3,11 @@ package nodesyncer
 import (
 	"fmt"
 
-	"encoding/json"
+	"strings"
 
 	"github.com/rancher/norman/types/convert"
+	"github.com/rancher/rancher/pkg/kubectl"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -37,9 +36,13 @@ func (m *NodesSyncer) syncCordonFields(key string, obj *v3.Node) error {
 			return err
 		}
 	}
+	if !desiredValue {
+		removeDrainCondition(obj)
+	}
 	nodeCopy := obj.DeepCopy()
 	nodeCopy.Spec.DesiredNodeUnschedulable = ""
-	if _, err := m.machines.Update(nodeCopy); err != nil {
+	_, err = m.machines.Update(nodeCopy)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -49,7 +52,6 @@ func (d *NodeDrain) drainNode(key string, obj *v3.Node) error {
 	if obj == nil || obj.DeletionTimestamp != nil || obj.Spec.DesiredNodeUnschedulable != "drain" {
 		return nil
 	}
-	logrus.Info("entered!(2)")
 	cluster, err := d.clusterLister.Get("", d.clusterName)
 	if err != nil {
 		return err
@@ -62,61 +64,102 @@ func (d *NodeDrain) drainNode(key string, obj *v3.Node) error {
 	if err != nil {
 		return err
 	}
-	logrus.Infof("token %s", token)
-	//kubeConfig := d.kubeConfigGetter.KubeConfig(d.clusterName, token)
-	// check for true InsecureSkipTLSVerify
-	//_, err = kubectl.Drain(kubeConfig, getArgs(obj.Spec.RequestedHostname, obj.Spec.NodeDrainInput))
-	flags := getArgs(obj.Spec.RequestedHostname, obj.Spec.NodeDrainInput)
-	ans, _ := json.Marshal(flags)
-	logrus.Info("Flags %s", string(ans))
-	return nil
-	//if err != nil {
-	//	logrus.Info("Kinara error %v", err)
-	//}
-	// ans, _ := json.Marshal(node)
-	// logrus.Infof("node! %s", string(ans))
+
+	kubeConfig := d.kubeConfigGetter.KubeConfig(d.clusterName, token)
+	for _, cluster := range kubeConfig.Clusters {
+		if !cluster.InsecureSkipTLSVerify {
+			cluster.InsecureSkipTLSVerify = true
+		}
+	}
+	nodeName := obj.Spec.RequestedHostname
+	updateDrainCondition(obj, "unknown", "")
+	_, err, msg := kubectl.Drain(kubeConfig, nodeName, getFlags(obj.Spec.NodeDrainInput))
+	errMsg := ""
+	if err != nil {
+		errMsg = filterErrorMsg(msg, nodeName)
+		updateDrainCondition(obj, "false", errMsg)
+	} else {
+		updateDrainCondition(obj, "true", "node successfully drained")
+	}
+
 	nodeCopy := obj.DeepCopy()
 	nodeCopy.Spec.DesiredNodeUnschedulable = ""
-	// ans, _ = json.Marshal(nodeCopy)
-	// logrus.Infof("nodeCopy! %s", string(ans))
-
 	if _, err := d.machines.Update(nodeCopy); err != nil {
 		return err
 	}
+	if len(errMsg) > 0 {
+		return fmt.Errorf("Error draining node [%s] in cluster [%s] : %s", nodeName, d.clusterName, errMsg)
+	}
 	return nil
 }
 
-func getArgs(nodeName string, input *v3.NodeDrainInput) []string {
-	flags := []string{
-		fmt.Sprintf("%s", nodeName),
+func getFlags(input *v3.NodeDrainInput) []string {
+	return []string{
 		fmt.Sprintf("--delete-local-data=%v", input.DeleteLocalData),
-		fmt.Sprintf("--force=%v", true),
+		fmt.Sprintf("--force=%v", input.Force),
 		fmt.Sprintf("--grace-period=%v", input.GracePeriod),
 		fmt.Sprintf("--ignore-daemonsets=%v", input.IgnoreDaemonSets),
 		fmt.Sprintf("--timeout=%s", convert.ToString(input.Timeout)+"s")}
-
-	//input.Selector = &metav1.LabelSelector{MatchLabels: map[string]string{},
-	//	MatchExpressions: []metav1.LabelSelectorRequirement{}}
-
-	if input.Selector != nil {
-		flags = append(flags[1:], fmt.Sprintf("--selector=%s", metav1.FormatLabelSelector(input.Selector)))
-		logrus.Info("not emptyz")
-	}
-
-	return flags
 }
 
-func convertSelectorToString(selector metav1.LabelSelector) string {
-	ans := metav1.FormatLabelSelector(&selector)
-	if &selector == nil {
-		logrus.Info("it's nil")
+func updateDrainCondition(obj *v3.Node, status string, msg string) {
+	if status == "unknown" {
+		v3.NodeConditionDrained.Unknown(obj)
+	} else if status == "true" {
+		v3.NodeConditionDrained.True(obj)
+	} else if status == "false" {
+		v3.NodeConditionDrained.False(obj)
 	}
-	if len(selector.MatchLabels)+len(selector.MatchExpressions) == 0 {
-		logrus.Info("zerrooo %s", "0")
+	v3.NodeConditionDrained.Message(obj, msg)
+}
+
+func filterErrorMsg(msg string, nodeName string) string {
+	upd := []string{}
+	lines := strings.Split(msg, "\n")
+	for _, line := range lines[1:] {
+		if strings.HasPrefix(line, "WARNING") || strings.HasPrefix(line, nodeName) {
+			continue
+		}
+		if strings.Contains(line, "aborting") {
+			continue
+		}
+		if strings.HasPrefix(line, "There are pending nodes ") {
+			// for only one node in our case
+			continue
+		}
+		if strings.HasPrefix(line, "There are pending pods ") {
+			// already considered error
+			continue
+		}
+		if strings.HasPrefix(line, "error") && strings.Contains(line, "unable to drain node") {
+			// actual reason at end
+			continue
+		}
+		if strings.HasPrefix(line, "pod") && strings.Contains(line, "evicted") {
+			// evicted successfully
+			continue
+		}
+		upd = append(upd, line)
 	}
-	if len(selector.MatchExpressions) == 0 {
-		logrus.Info("matchExp %v", 0)
+	return strings.Join(upd, "\n")
+}
+
+func removeDrainCondition(obj *v3.Node) {
+	exists := false
+	for _, condition := range obj.Status.Conditions {
+		if condition.Type == "Drained" {
+			exists = true
+			break
+		}
 	}
-	logrus.Info("convertSelectorToString %s", ans)
-	return ans
+	if exists {
+		var conditions []v3.NodeCondition
+		for _, condition := range obj.Status.Conditions {
+			if condition.Type == "Drained" {
+				continue
+			}
+			conditions = append(conditions, condition)
+		}
+		obj.Status.Conditions = conditions
+	}
 }

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strconv"
@@ -85,7 +84,6 @@ func cordonUncordonDrainNode(actionName string, apiContext *types.APIContext, co
 		if drainInput, err := validate(apiContext); err != nil {
 			return err
 		} else {
-			return nil
 			values.PutValue(node, actionName, "desiredNodeUnschedulable")
 			values.PutValue(node, drainInput, "nodeDrainInput")
 		}
@@ -105,8 +103,8 @@ func cordonUncordonDrainNode(actionName string, apiContext *types.APIContext, co
 func validate(apiContext *types.APIContext) (*v3.NodeDrainInput, error) {
 	input, err := handler.ParseAndValidateActionBody(apiContext, apiContext.Schemas.Schema(&managementschema.Version,
 		client.NodeDrainInputType))
-	ans, _ := json.Marshal(input)
-	logrus.Info("original %s", string(ans))
+	//ans, _ := json.Marshal(input)
+	//logrus.Info("original %s", string(ans))
 	if err != nil {
 		return nil, httperror.NewAPIError(httperror.InvalidBodyContent,
 			fmt.Sprintf("Failed to parse action body: %v", err))
@@ -116,13 +114,12 @@ func validate(apiContext *types.APIContext) (*v3.NodeDrainInput, error) {
 		return nil, httperror.NewAPIError(httperror.InvalidBodyContent,
 			fmt.Sprintf("Failed to parse body: %v", err))
 	}
-	_, err = metav1.LabelSelectorAsSelector(drainInput.Selector)
-	if err != nil {
+	if _, err = metav1.LabelSelectorAsSelector(&drainInput.Selector); err != nil {
 		return nil, httperror.NewFieldAPIError(httperror.InvalidFormat,
 			"selector", fmt.Sprintf("Failed to parse: %v", err))
 	}
-	ans, _ = json.Marshal(drainInput)
-	logrus.Info("validate %s", string(ans))
+	//ans, _ = json.Marshal(drainInput)
+	//logrus.Info("validate %s", string(ans))
 	return drainInput, nil
 }
 

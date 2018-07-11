@@ -1,7 +1,6 @@
 package kubectl
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -9,8 +8,6 @@ import (
 
 	"fmt"
 
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -49,26 +46,24 @@ func Apply(yaml []byte, kubeConfig *clientcmdapi.Config) ([]byte, error) {
 	return runWithHTTP2(cmd)
 }
 
-func Drain(kubeConfig *clientcmdapi.Config, args []string) ([]byte, error) {
+func Drain(kubeConfig *clientcmdapi.Config, nodeName string, args []string) ([]byte, error, string) {
 	kubeConfigFile, err := tempFile("kubeconfig-")
 	if err != nil {
-		return nil, err
+		return nil, err, ""
 	}
 	defer os.Remove(kubeConfigFile.Name())
 
 	if err := clientcmd.WriteToFile(*kubeConfig, kubeConfigFile.Name()); err != nil {
-		return nil, err
+		return nil, err, ""
 	}
 
 	cmd := exec.Command("kubectl",
 		"--kubeconfig",
 		kubeConfigFile.Name(),
-		"drain")
-
+		"drain",
+		nodeName)
 	cmd.Args = append(cmd.Args, args...)
 
-	ans, _ := json.Marshal(cmd)
-	logrus.Info("Command %s", string(ans))
 	var newEnv []string
 	for _, env := range os.Environ() {
 		if strings.HasPrefix(env, "DISABLE_HTTP2") {
@@ -77,22 +72,8 @@ func Drain(kubeConfig *clientcmdapi.Config, args []string) ([]byte, error) {
 		newEnv = append(newEnv, env)
 	}
 	cmd.Env = newEnv
-	_, err = cmd.CombinedOutput()
-	if err != nil {
-		logrus.Info("inside drain")
-		logrus.Info(fmt.Sprint(err))
-		logrus.Info(cmd.Stderr)
-	}
-	return cmd.CombinedOutput()
-}
-
-func convertSelectorToString(selector *metav1.LabelSelector) string {
-	if selector == nil {
-		logrus.Info("selector is nil!")
-	}
-	ans := metav1.FormatLabelSelector(selector)
-	// logrus.Info("convertSelectorToString %s", ans)
-	return ans
+	output, err := cmd.CombinedOutput()
+	return output, err, fmt.Sprint(cmd.Stderr)
 }
 
 func tempFile(prefix string) (*os.File, error) {
