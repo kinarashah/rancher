@@ -24,7 +24,6 @@ import (
 	"github.com/rancher/types/client/management/v3"
 	"github.com/sirupsen/logrus"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Formatter for Node
@@ -113,10 +112,6 @@ func validate(apiContext *types.APIContext) (*v3.NodeDrainInput, error) {
 	if err := mapstructure.Decode(input, drainInput); err != nil {
 		return nil, httperror.NewAPIError(httperror.InvalidBodyContent,
 			fmt.Sprintf("Failed to parse body: %v", err))
-	}
-	if _, err = metav1.LabelSelectorAsSelector(&drainInput.Selector); err != nil {
-		return nil, httperror.NewFieldAPIError(httperror.InvalidFormat,
-			"selector", fmt.Sprintf("Failed to parse: %v", err))
 	}
 	//ans, _ = json.Marshal(drainInput)
 	//logrus.Info("validate %s", string(ans))
