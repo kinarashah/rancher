@@ -287,8 +287,8 @@ type NodeDrainInput struct {
 	//Period of time in seconds given to each pod to terminate gracefully.
 	// If negative, the default value specified in the pod will be used
 	GracePeriod int `json:"gracePeriod,omitempty" norman:"default=-1"`
-	// The length of time to wait (in seconds) before giving up, zero means infinite)
-	Timeout int `json:"timeout" norman:"min=1,max=18000,default=300"`
-	// Selector (label query) to filter on
-	Selector metav1.LabelSelector `json:"selector"`
+	// Time to wait (in seconds) before giving up for one try
+	Timeout int `json:"timeout" norman:"min=1,max=10800,default=60"`
+	// Number of retries
+	Retries int `json:"retries" norman:"min=1,max=20,default=3"`
 }
