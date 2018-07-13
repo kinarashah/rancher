@@ -25,7 +25,6 @@ def test_system_project_created(admin_cc):
 
 
 def test_system_namespaces_assigned(admin_cc, admin_pc):
-    pc = admin_pc
     projects = admin_cc.management.client.list_project(
                clusterId=admin_cc.cluster.id)
     systemProject = None
@@ -35,7 +34,7 @@ def test_system_namespaces_assigned(admin_cc, admin_pc):
             break
     assert systemProject is not None
 
-    system_namespaces = pc.cluster.client.list_namespace(
+    system_namespaces = admin_cc.client.list_namespace(
                         projectId=systemProject.id)
     system_namespaces_names = set(
         [ns.data_dict()['name'] for ns in system_namespaces])

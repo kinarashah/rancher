@@ -1,6 +1,8 @@
 package networkpolicy
 
 import (
+	"fmt"
+
 	"github.com/rancher/rancher/pkg/controllers/user/nslabels"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +25,7 @@ func (nss *nsSyncer) Sync(key string, ns *corev1.Namespace) error {
 	if ok {
 		logrus.Debugf("nsSyncer: Sync: ns=%v projectID=%v", ns.Name, projectID)
 		if err := nss.npmgr.programNetworkPolicy(projectID, nss.clusterNamespace); err != nil {
-			logrus.Errorf("nsSyncer: Sync: error programming network policy: %v (ns=%v, projectID=%v), ", err, ns.Name, projectID)
+			return fmt.Errorf("nsSyncer: Sync: error programming network policy: %v (ns=%v, projectID=%v), ", err, ns.Name, projectID)
 		}
 	}
 

@@ -2,7 +2,6 @@ package rbac
 
 import (
 	"fmt"
-
 	"strings"
 
 	"github.com/pkg/errors"
@@ -84,10 +83,14 @@ func (p *pLifecycle) Remove(project *v3.Project) (*v3.Project, error) {
 }
 
 func (p *pLifecycle) ensureNamespacesAssigned(project *v3.Project) error {
-	if _, ok := project.Labels["authz.management.cattle.io/default-project"]; !ok {
-		if _, ok := project.Labels["authz.management.cattle.io/system-project"]; !ok {
-			return nil
-		}
+	projectName := ""
+	if _, ok := project.Labels["authz.management.cattle.io/default-project"]; ok {
+		projectName = "Default"
+	} else if _, ok := project.Labels["authz.management.cattle.io/system-project"]; !ok {
+		projectName = "System"
+	}
+	if projectName == "" {
+		return nil
 	}
 
 	cluster, err := p.m.clusterLister.Get("", p.m.clusterName)
@@ -98,7 +101,7 @@ func (p *pLifecycle) ensureNamespacesAssigned(project *v3.Project) error {
 		return errors.Errorf("couldn't find cluster %v", p.m.clusterName)
 	}
 
-	switch projectName := project.Spec.DisplayName; projectName {
+	switch projectName {
 	case "Default":
 		if err = p.ensureDefaultNamespaceAssigned(cluster, project); err != nil {
 			return err
@@ -114,24 +117,24 @@ func (p *pLifecycle) ensureNamespacesAssigned(project *v3.Project) error {
 
 func (p *pLifecycle) ensureDefaultNamespaceAssigned(cluster *v3.Cluster, project *v3.Project) error {
 	_, err := v3.ClusterConditionDefaultNamespaceAssigned.DoUntilTrue(cluster.DeepCopy(), func() (runtime.Object, error) {
-		return nil, p.assignNamespacesToProject(project)
+		return nil, p.assignNamespacesToProject(project, "Default")
 	})
 	return err
 }
 
 func (p *pLifecycle) ensureSystemNamespaceAssigned(cluster *v3.Cluster, project *v3.Project) error {
 	_, err := v3.ClusterConditionSystemNamespacesAssigned.DoUntilTrue(cluster.DeepCopy(), func() (runtime.Object, error) {
-		return nil, p.assignNamespacesToProject(project)
+		return nil, p.assignNamespacesToProject(project, "System")
 	})
 	return err
 }
 
-func (p *pLifecycle) assignNamespacesToProject(project *v3.Project) error {
-	defaultProjectsToNamespaces, err := GetDefaultProjectsToNamespaces()
+func (p *pLifecycle) assignNamespacesToProject(project *v3.Project, projectName string) error {
+	initialProjectsToNamespaces, err := getDefaultAndSystemProjectsToNamespaces()
 	if err != nil {
 		return err
 	}
-	for _, nsName := range defaultProjectsToNamespaces[project.Spec.DisplayName] {
+	for _, nsName := range initialProjectsToNamespaces[projectName] {
 		ns, err := p.m.nsLister.Get("", nsName)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -156,7 +159,7 @@ func (p *pLifecycle) assignNamespacesToProject(project *v3.Project) error {
 	return nil
 }
 
-func GetDefaultProjectsToNamespaces() (map[string][]string, error) {
+func getDefaultAndSystemProjectsToNamespaces() (map[string][]string, error) {
 	systemNamespacesStr := settings.SystemNamespaces.Get()
 	var systemNamespaces []string
 	if systemNamespacesStr == "" {
