@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rancher/rancher/pkg/controllers/user/nslabels"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
 type nsSyncer struct {
 	npmgr            *netpolMgr
+	clusterLister    v3.ClusterLister
 	clusterNamespace string
 }
 
@@ -18,6 +20,17 @@ func (nss *nsSyncer) Sync(key string, ns *corev1.Namespace) error {
 	if ns == nil || ns.DeletionTimestamp != nil {
 		return nil
 	}
+
+	logrus.Info("entered nssyncer")
+
+	disabled, err := isNetworkPolicyDisabled(nss.clusterNamespace, nss.clusterLister)
+	if err != nil {
+		return err
+	}
+	if disabled {
+		return nil
+	}
+
 	logrus.Debugf("nsSyncer: Sync: %v, %+v", ns.Name, *ns)
 
 	// program project isolation network policy
