@@ -1,8 +1,12 @@
 package networkpolicy
 
 import (
-	"github.com/rancher/rancher/pkg/settings"
+	"fmt"
 	"strings"
+
+	"github.com/rancher/rancher/pkg/settings"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 func GetSystemNamespaces() map[string]bool {
@@ -15,4 +19,12 @@ func GetSystemNamespaces() map[string]bool {
 		}
 	}
 	return systemNamespaces
+}
+
+func isNetworkPolicyDisabled(clusterNamespace string, clusterLister v3.ClusterLister) (bool, error) {
+	cluster, err := clusterLister.Get("", clusterNamespace)
+	if err != nil && apierrors.IsNotFound(err) {
+		return false, fmt.Errorf("error getting cluster %v", err)
+	}
+	return !cluster.Status.AppliedEnableNetworkPolicy, nil
 }

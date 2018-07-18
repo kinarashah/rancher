@@ -18,14 +18,20 @@ func Register(cluster *config.UserContext) {
 	npClient := cluster.Networking
 	npLister := cluster.Networking.NetworkPolicies("").Controller().Lister()
 	pLister := cluster.Management.Management.Projects("").Controller().Lister()
+	podLister := cluster.Core.Pods("").Controller().Lister()
+	serviceLister := cluster.Core.Services("").Controller().Lister()
+	clusterLister := cluster.Management.Management.Clusters("").Controller().Lister()
+	clusters := cluster.Management.Management.Clusters("")
 
 	npmgr := &netpolMgr{nsLister, nodeLister, pods, npLister, npClient, pLister, cluster.ClusterName}
-	ps := &projectSyncer{pnpLister, pnpClient, projClient}
-	nss := &nsSyncer{npmgr, cluster.ClusterName}
+	ps := &projectSyncer{pnpLister, pnpClient, projClient, clusterLister, cluster.ClusterName}
+	nss := &nsSyncer{npmgr, clusterLister, cluster.ClusterName}
 	pnps := &projectNetworkPolicySyncer{npmgr}
-	podHandler := &podHandler{npmgr, pods, cluster.ClusterName}
-	serviceHandler := &serviceHandler{npmgr, cluster.ClusterName}
-	nodeHandler := &nodeHandler{npmgr, cluster.ClusterName}
+	podHandler := &podHandler{npmgr, pods, clusterLister, cluster.ClusterName}
+	serviceHandler := &serviceHandler{npmgr, clusterLister, cluster.ClusterName}
+	nodeHandler := &nodeHandler{npmgr, clusterLister, cluster.ClusterName}
+	clusterNetPolHandler := &clusterNetPolHandler{cluster, pnpLister, podLister,
+		serviceLister, projClient, clusters, npmgr}
 
 	cluster.Management.Management.Projects("").Controller().AddClusterScopedHandler("projectSyncer", cluster.ClusterName, ps.Sync)
 	cluster.Management.Management.ProjectNetworkPolicies("").AddClusterScopedHandler("projectNetworkPolicySyncer", cluster.ClusterName, pnps.Sync)
@@ -34,4 +40,7 @@ func Register(cluster *config.UserContext) {
 	cluster.Core.Pods("").AddHandler("podHandler", podHandler.Sync)
 	cluster.Core.Services("").AddHandler("serviceHandler", serviceHandler.Sync)
 	cluster.Management.Management.Nodes(cluster.ClusterName).Controller().AddHandler("nodeHandler", nodeHandler.Sync)
+
+	cluster.Management.Management.Clusters("").AddHandler("clusterNetPolHandler", clusterNetPolHandler.Sync)
+
 }
