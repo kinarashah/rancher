@@ -18,14 +18,15 @@ func Register(cluster *config.UserContext) {
 	npClient := cluster.Networking
 	npLister := cluster.Networking.NetworkPolicies("").Controller().Lister()
 	pLister := cluster.Management.Management.Projects("").Controller().Lister()
+	clusterLister := cluster.Management.Management.Clusters("").Controller().Lister()
 
 	npmgr := &netpolMgr{nsLister, nodeLister, pods, npLister, npClient, pLister, cluster.ClusterName}
-	ps := &projectSyncer{pnpLister, pnpClient, projClient}
-	nss := &nsSyncer{npmgr, cluster.ClusterName}
+	ps := &projectSyncer{pnpLister, pnpClient, projClient, clusterLister, cluster.ClusterName}
+	nss := &nsSyncer{npmgr, clusterLister, cluster.ClusterName}
 	pnps := &projectNetworkPolicySyncer{npmgr}
-	podHandler := &podHandler{npmgr, pods, cluster.ClusterName}
-	serviceHandler := &serviceHandler{npmgr, cluster.ClusterName}
-	nodeHandler := &nodeHandler{npmgr, cluster.ClusterName}
+	podHandler := &podHandler{npmgr, pods, clusterLister, cluster.ClusterName}
+	serviceHandler := &serviceHandler{npmgr, clusterLister, cluster.ClusterName}
+	nodeHandler := &nodeHandler{npmgr, clusterLister, cluster.ClusterName}
 
 	cluster.Management.Management.Projects("").Controller().AddClusterScopedHandler("projectSyncer", cluster.ClusterName, ps.Sync)
 	cluster.Management.Management.ProjectNetworkPolicies("").AddClusterScopedHandler("projectNetworkPolicySyncer", cluster.ClusterName, pnps.Sync)
