@@ -26,5 +26,9 @@ func isNetworkPolicyDisabled(clusterNamespace string, clusterLister v3.ClusterLi
 	if err != nil && apierrors.IsNotFound(err) {
 		return false, fmt.Errorf("error getting cluster %v", err)
 	}
-	return !cluster.Spec.EnableNetworkPolicy, nil
+	return !cluster.Status.AppliedEnableNetworkPolicy, nil
+}
+
+func networkPolicyExists(namespace string, name string, policyName string) (bool, error) {
+	return true, nil
 }

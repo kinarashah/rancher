@@ -35,6 +35,13 @@ func (ps *projectSyncer) Sync(key string, p *v3.Project) error {
 		return err
 	}
 	if disabled {
+		exists, err := networkPolicyExists(p.Namespace, p.Name, "pnp-"+p.Name)
+		if err != nil {
+			return err
+		}
+		if exists {
+
+		}
 		return nil
 	}
 

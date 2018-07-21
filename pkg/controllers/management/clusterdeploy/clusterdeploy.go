@@ -17,6 +17,7 @@ import (
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/config"
 	"github.com/rancher/types/user"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -46,6 +47,8 @@ func (cd *clusterDeploy) sync(key string, cluster *v3.Cluster) error {
 	var (
 		err, updateErr error
 	)
+
+	logrus.Info("kinara enter clusterdeploy")
 
 	if key == "" || cluster == nil {
 		return nil
