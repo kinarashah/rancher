@@ -291,10 +291,12 @@ func needRoleUpdate(node *v3.Node, nodePool *v3.NodePool) bool {
 	}
 
 	poolRolesMap := map[string]bool{}
-	nodeRolesMap[services.ETCDRole] = nodePool.Spec.Etcd
-	nodeRolesMap[services.ControlRole] = nodePool.Spec.ControlPlane
-	nodeRolesMap[services.WorkerRole] = nodePool.Spec.Worker
-	return !reflect.DeepEqual(nodeRolesMap, poolRolesMap)
+	poolRolesMap[services.ETCDRole] = nodePool.Spec.Etcd
+	poolRolesMap[services.ControlRole] = nodePool.Spec.ControlPlane
+	poolRolesMap[services.WorkerRole] = nodePool.Spec.Worker
+	value := !reflect.DeepEqual(nodeRolesMap, poolRolesMap)
+	logrus.Infof("ENTERED HERE, NEED TO UPDATE %v", value)
+	return value
 }
 
 func (c *Controller) updateNodeRoles(existing *v3.Node, nodePool *v3.NodePool, simulate bool) (*v3.Node, error) {
@@ -311,10 +313,12 @@ func (c *Controller) updateNodeRoles(existing *v3.Node, nodePool *v3.NodePool, s
 		newRoles = append(newRoles, "worker")
 	}
 
+	logrus.Infof("newRoles %+v", newRoles)
 	toUpdate.Status.NodeConfig.Role = newRoles
 	if simulate {
+		logrus.Infof("returning original !! ")
 		return toUpdate, nil
 	}
-
+	logrus.Infof("updating node !!!!!!")
 	return c.Nodes.Update(toUpdate)
 }

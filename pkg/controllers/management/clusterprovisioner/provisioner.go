@@ -1,6 +1,7 @@
 package clusterprovisioner
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sort"
@@ -122,7 +123,6 @@ func (p *Provisioner) update(cluster *v3.Cluster, create bool) (*v3.Cluster, err
 	if err != nil {
 		return cluster, err
 	}
-
 	v3.ClusterConditionProvisioned.True(cluster)
 	v3.ClusterConditionPending.True(cluster)
 	return cluster, nil
@@ -428,6 +428,13 @@ func (p *Provisioner) getSpec(cluster *v3.Cluster) (*v3.ClusterSpec, error) {
 		newSpec = nil
 	}
 
+	ans, _ := json.Marshal(newConfig)
+	old, _ := json.Marshal(oldConfig)
+	if newSpec != nil {
+		logrus.Infof("old spec %s", string(old))
+		logrus.Infof("new spec %s", string(ans))
+	}
+
 	return newSpec, nil
 }
 
@@ -480,6 +487,8 @@ func (p *Provisioner) reconcileRKENodes(clusterName string) ([]v3.RKEConfigNode,
 		if node.NodeName == "" {
 			node.NodeName = ref.FromStrings(machine.Namespace, machine.Name)
 		}
+		sort.Strings(node.Role)
+
 		nodes = append(nodes, node)
 	}
 

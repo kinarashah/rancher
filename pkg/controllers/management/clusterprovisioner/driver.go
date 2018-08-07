@@ -6,6 +6,7 @@ import (
 	"github.com/rancher/rancher/pkg/clusterprovisioninglogger"
 	"github.com/rancher/rke/services"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -35,6 +36,7 @@ func (p *Provisioner) driverUpdate(cluster *v3.Cluster, spec v3.ClusterSpec) (ap
 	}
 
 	if newCluster, err := p.Clusters.Update(cluster); err == nil {
+		logrus.Infof("Kinara updated cluster!")
 		cluster = newCluster
 	}
 
