@@ -93,6 +93,7 @@ func (n *nsLifecycle) syncNS(obj *v1.Namespace) (bool, error) {
 }
 
 func (n *nsLifecycle) assignToInitialProject(ns *v1.Namespace) error {
+	logrus.Infof("enter assignTo Initial Project %s", ns.Name)
 	initialProjectsToNamespaces, err := getDefaultAndSystemProjectsToNamespaces()
 	if err != nil {
 		return err

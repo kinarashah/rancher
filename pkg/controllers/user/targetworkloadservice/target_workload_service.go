@@ -19,6 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -146,6 +147,7 @@ func (c *Controller) updateServiceWorkloadPods(key string, workloadIDsToCleanup 
 	var podsToEnqueue []*corev1.Pod
 	var workloadsToCleanup []*util.Workload
 	for workloadID := range workloadIDsToCleanup {
+		logrus.Infof("calling from service workload")
 		workload, err := c.fetchWorkload(workloadID)
 		if err != nil {
 			return err
@@ -204,6 +206,7 @@ func (c *Controller) updatePods(serviceName string, obj *corev1.Service, workloa
 	var podsToUpdate []*corev1.Pod
 	targetWorkloadIDs := map[string]bool{}
 	for _, workloadID := range workloadIDs {
+		logrus.Infof("calling from updatePods")
 		workload, err := c.fetchWorkload(workloadID)
 		if err != nil {
 			return nil, err
@@ -281,9 +284,19 @@ func (c *PodController) sync(key string, obj *corev1.Pod) error {
 		}
 		if workloadService == nil {
 			logrus.Warnf("Failed to fetch service [%s]: [%v]", workloadServiceUUID, err)
-			workloadServiceUUIDToWorkloadIDs.Delete(workloadServiceUUID)
-			continue
+			// try from API
+			workloadService, err = c.services.GetNamespaced(parts[0], parts[1], metav1.GetOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				return err
+			}
+			if workloadService == nil {
+				logrus.Warnf("Failed to fetch service [%s]: [%v]", workloadServiceUUID, err)
+				workloadServiceUUIDToWorkloadIDs.Delete(workloadServiceUUID)
+				continue
+			}
 		}
+
+		logrus.Infof("workloadService +%v", workloadService)
 
 		for key, value := range workloadService.Spec.Selector {
 			workloadServicesLabels[key] = value
