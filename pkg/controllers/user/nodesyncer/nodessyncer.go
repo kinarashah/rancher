@@ -164,11 +164,19 @@ func (m *NodesSyncer) syncLabels(key string, obj *v3.Node) (runtime.Object, erro
 	updateAnnotations := false
 	// set annotations
 	if obj.Spec.DesiredNodeAnnotations != nil && !reflect.DeepEqual(node.Annotations, obj.Spec.DesiredNodeAnnotations) {
-		updateAnnotations = true
+		if reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
+			updateAnnotations = true
+		} else {
+			logrus.Infof("will wait for anns to be equal")
+		}
 	}
 	// set labels
 	if obj.Spec.DesiredNodeLabels != nil && !reflect.DeepEqual(node.Labels, obj.Spec.DesiredNodeLabels) {
-		updateLabels = true
+		if reflect.DeepEqual(node.Labels, obj.Status.NodeLabels) {
+			updateLabels = true
+		} else {
+			logrus.Infof("will wait for anns to be equal")
+		}
 	}
 
 	if updateLabels || updateAnnotations {
@@ -291,7 +299,7 @@ func (m *NodesSyncer) updateNode(existing *v3.Node, node *corev1.Node, pods map[
 	if err != nil {
 		return errors.Wrapf(err, "Failed to update machine for node [%s]", node.Name)
 	}
-	logrus.Debugf("Updated machine for node [%s]", node.Name)
+	logrus.Infof("Updated machine for node [%s]", node.Name)
 	return nil
 }
 
@@ -393,6 +401,10 @@ func objectsAreEqual(existing *v3.Node, toUpdate *v3.Node) bool {
 		logrus.Debugf("ObjectsAreEqualResults for %s: statusEqual: %t specEqual: %t"+
 			" nodeNameEqual: %t labelsEqual: %t annotationsEqual: %t requestsEqual: %t limitsEqual: %t rolesEqual: %t",
 			toUpdate.Name, statusEqual, specEqual, nodeNameEqual, labelsEqual, annotationsEqual, requestsEqual, limitsEqual, rolesEqual)
+
+		if !annotationsEqual {
+			logrus.Infof("%s anns not equal existing %v toupdate %v", existing.Name, existing.Status.NodeAnnotations, toUpdateToCompare.Status.NodeAnnotations)
+		}
 	}
 	return retVal
 }
