@@ -23,6 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	corev1 "github.com/rancher/types/apis/core/v1"
 	typedv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -38,6 +39,7 @@ func Register(management *config.ManagementContext) {
 	}
 
 	nodeClient := management.Management.Nodes("")
+	k8sodes := management.Core.Nodes("")
 
 	nodeLifecycle := &Lifecycle{
 		systemAccountManager:      systemaccount.NewManager(management),
@@ -48,6 +50,7 @@ func Register(management *config.ManagementContext) {
 		configMapGetter:           management.K8sClient.CoreV1(),
 		logger:                    management.EventLogger,
 		clusterLister:             management.Management.Clusters("").Controller().Lister(),
+		k8snodes:k8sodes,
 	}
 
 	nodeClient.AddLifecycle("node-controller", nodeLifecycle)
@@ -62,6 +65,7 @@ type Lifecycle struct {
 	configMapGetter           typedv1.ConfigMapsGetter
 	logger                    event.Logger
 	clusterLister             v3.ClusterLister
+	k8snodes corev1.NodeInterface
 }
 
 func (m *Lifecycle) setupCustom(obj *v3.Node) {

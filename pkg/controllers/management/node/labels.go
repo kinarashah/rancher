@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"strings"
 
 	"github.com/rancher/rancher/pkg/librke"
@@ -49,6 +50,7 @@ func (m *Lifecycle) checkLabels(node *v3.Node) (*v3.Node, error) {
 
 	for k, v := range nodePlan.Annotations {
 		if node.Status.NodeAnnotations[k] != v {
+			logrus.Infof("not equal with key %s from plan %s actual %s", k, v, node.Status.NodeAnnotations[k])
 			update = true
 			break
 		}
@@ -71,6 +73,8 @@ func (m *Lifecycle) checkLabels(node *v3.Node) (*v3.Node, error) {
 	for k, v := range nodePlan.Annotations {
 		node.Spec.DesiredNodeAnnotations[k] = v
 	}
+
+	logrus.Infof("Desired anns %v", node.Spec.DesiredNodeAnnotations)
 
 	return node, nil
 }
