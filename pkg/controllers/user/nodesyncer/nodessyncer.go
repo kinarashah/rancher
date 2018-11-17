@@ -133,7 +133,7 @@ func (n *NodeSyncer) needUpdate(key string, node *corev1.Node) (bool, error) {
 	}
 
 	// update only when nothing changed
-	if objectsAreEqual(existing, toUpdate) {
+	if objectsAreEqual(existing, toUpdate, "needUpdate") {
 		return false, nil
 	}
 	return true, nil
@@ -164,19 +164,21 @@ func (m *NodesSyncer) syncLabels(key string, obj *v3.Node) (runtime.Object, erro
 	updateAnnotations := false
 	// set annotations
 	if obj.Spec.DesiredNodeAnnotations != nil && !reflect.DeepEqual(node.Annotations, obj.Spec.DesiredNodeAnnotations) {
-		if reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
-			updateAnnotations = true
-		} else {
-			logrus.Infof("will wait for anns to be equal")
+		//if reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
+		updateAnnotations = true
+		//} else {
+		if !reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
+			logrus.Infof("%v maybe wait for anns to be equal node %v machine %v ", node.Name, node.Annotations, obj.Status.NodeAnnotations)
 		}
+		//}
 	}
 	// set labels
 	if obj.Spec.DesiredNodeLabels != nil && !reflect.DeepEqual(node.Labels, obj.Spec.DesiredNodeLabels) {
-		if reflect.DeepEqual(node.Labels, obj.Status.NodeLabels) {
-			updateLabels = true
-		} else {
-			logrus.Infof("will wait for anns to be equal")
-		}
+		//if reflect.DeepEqual(node.Labels, obj.Status.NodeLabels) {
+		updateLabels = true
+		//} else {
+		//	logrus.Infof("%v will wait for labels to be equal", node.Name)
+		//}
 	}
 
 	if updateLabels || updateAnnotations {
@@ -185,9 +187,10 @@ func (m *NodesSyncer) syncLabels(key string, obj *v3.Node) (runtime.Object, erro
 			toUpdate.Labels = obj.Spec.DesiredNodeLabels
 		}
 		if updateAnnotations {
+			logrus.Infof("node %v original annotations %v", toUpdate.Name, toUpdate.Annotations)
 			toUpdate.Annotations = obj.Spec.DesiredNodeAnnotations
 		}
-		logrus.Infof("Updating node %v with labels %v and annotations %v", toUpdate.Name, toUpdate.Labels, toUpdate.Annotations)
+		logrus.Infof("Updating node %v with labels %v and annotations %v ", toUpdate.Name, toUpdate.Labels, toUpdate.Annotations)
 		if _, err := m.nodeClient.Update(toUpdate); err != nil {
 			return nil, err
 		}
@@ -291,15 +294,16 @@ func (m *NodesSyncer) updateNode(existing *v3.Node, node *corev1.Node, pods map[
 		return err
 	}
 	// update only when nothing changed
-	if objectsAreEqual(existing, toUpdate) {
+	if objectsAreEqual(existing, toUpdate, "updateNode") {
 		return nil
 	}
 	logrus.Debugf("Updating machine for node [%s]", node.Name)
 	_, err = m.machines.Update(toUpdate)
 	if err != nil {
+		logrus.Infof("update conflict error")
 		return errors.Wrapf(err, "Failed to update machine for node [%s]", node.Name)
 	}
-	logrus.Infof("Updated machine for node [%s]", node.Name)
+	logrus.Infof("Updated machine for node [%s] - machine %s", node.Name, existing.Name)
 	return nil
 }
 
@@ -382,7 +386,7 @@ func resetConditions(machine *v3.Node) *v3.Node {
 	return updated
 }
 
-func objectsAreEqual(existing *v3.Node, toUpdate *v3.Node) bool {
+func objectsAreEqual(existing *v3.Node, toUpdate *v3.Node, funcName string) bool {
 	// we are updating spec and status only, so compare them
 	toUpdateToCompare := resetConditions(toUpdate)
 	existingToCompare := resetConditions(existing)
@@ -403,7 +407,7 @@ func objectsAreEqual(existing *v3.Node, toUpdate *v3.Node) bool {
 			toUpdate.Name, statusEqual, specEqual, nodeNameEqual, labelsEqual, annotationsEqual, requestsEqual, limitsEqual, rolesEqual)
 
 		if !annotationsEqual {
-			logrus.Infof("%s anns not equal existing %v toupdate %v", existing.Name, existing.Status.NodeAnnotations, toUpdateToCompare.Status.NodeAnnotations)
+			logrus.Infof("%s anns %s not equal existing %v toupdate %v", existing.Name, funcName, existing.Status.NodeAnnotations, toUpdateToCompare.Status.NodeAnnotations)
 		}
 	}
 	return retVal

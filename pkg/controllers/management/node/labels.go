@@ -2,8 +2,9 @@ package node
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/rancher/rancher/pkg/librke"
 	"github.com/rancher/rke/services"
@@ -26,6 +27,7 @@ func (m *Lifecycle) checkLabels(node *v3.Node) (*v3.Node, error) {
 	}
 
 	if len(node.Spec.DesiredNodeAnnotations) > 0 || len(node.Spec.DesiredNodeLabels) > 0 {
+		logrus.Infof("labels.go %v return curr status %v", node.Name, node.Status.NodeAnnotations)
 		return node, nil
 	}
 
@@ -62,6 +64,8 @@ func (m *Lifecycle) checkLabels(node *v3.Node) (*v3.Node, error) {
 	node.Spec.DesiredNodeLabels = copyMap(node.Status.NodeLabels)
 	node.Spec.DesiredNodeAnnotations = copyMap(node.Status.NodeAnnotations)
 
+	logrus.Infof("labels.go %v curr status %v", node.Name, node.Status.NodeAnnotations)
+
 	for k, v := range nodePlan.Labels {
 		value, ok := node.Status.NodeLabels[k]
 		if !ok || (value != v && strings.Contains(k, "kubernetes.io")) {
@@ -70,15 +74,10 @@ func (m *Lifecycle) checkLabels(node *v3.Node) (*v3.Node, error) {
 	}
 
 	for k, v := range nodePlan.Annotations {
-		if val, ok := node.Spec.DesiredNodeAnnotations[k]; ok {
-			if val != v {
-				logrus.Infof("update ann %s from %v to %v", k, val, v)
-			}
-		} else {
-			logrus.Infof("add ann %s with %v", k, v)
-		}
 		node.Spec.DesiredNodeAnnotations[k] = v
 	}
+
+	logrus.Infof("labels.go %v final DesiredNodeAnnotations %v", node.Name, node.Spec.DesiredNodeAnnotations)
 
 	return node, nil
 }
