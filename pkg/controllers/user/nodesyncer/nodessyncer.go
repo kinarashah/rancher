@@ -164,13 +164,17 @@ func (m *NodesSyncer) syncLabels(key string, obj *v3.Node) (runtime.Object, erro
 	updateAnnotations := false
 	// set annotations
 	if obj.Spec.DesiredNodeAnnotations != nil && !reflect.DeepEqual(node.Annotations, obj.Spec.DesiredNodeAnnotations) {
-		//if reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
-		updateAnnotations = true
-		//} else {
-		if !reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
-			logrus.Infof("%v maybe wait for anns to be equal node %v machine %v ", node.Name, node.Annotations, obj.Status.NodeAnnotations)
-		}
+		if reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
+			if reflect.DeepEqual(node.Annotations, obj.Spec.CurrentNodeAnnotations) {
+				updateAnnotations = true
+			} else {
+				logrus.Infof("%v %s reset, controller2 node %v machine %v", node.Name, obj.Name, node.Annotations, obj.Spec.CurrentNodeAnnotations)
+			}
+		} else {
+		//if !reflect.DeepEqual(node.Annotations, obj.Status.NodeAnnotations) {
+			logrus.Infof("%v %s reset, controller1 node %v machine %v ", node.Name, obj.Name, node.Annotations, obj.Status.NodeAnnotations)
 		//}
+		}
 	}
 	// set labels
 	if obj.Spec.DesiredNodeLabels != nil && !reflect.DeepEqual(node.Labels, obj.Spec.DesiredNodeLabels) {
@@ -201,6 +205,7 @@ func (m *NodesSyncer) syncLabels(key string, obj *v3.Node) (runtime.Object, erro
 		machine := obj.DeepCopy()
 		machine.Spec.DesiredNodeAnnotations = nil
 		machine.Spec.DesiredNodeLabels = nil
+		machine.Spec.CurrentNodeAnnotations = nil
 		return m.machines.Update(machine)
 	}
 
