@@ -5,95 +5,97 @@ import (
 )
 
 const (
-	NodeType                      = "node"
-	NodeFieldAllocatable          = "allocatable"
-	NodeFieldAnnotations          = "annotations"
-	NodeFieldCapacity             = "capacity"
-	NodeFieldClusterID            = "clusterId"
-	NodeFieldConditions           = "conditions"
-	NodeFieldControlPlane         = "controlPlane"
-	NodeFieldCreated              = "created"
-	NodeFieldCreatorID            = "creatorId"
-	NodeFieldCustomConfig         = "customConfig"
-	NodeFieldDescription          = "description"
-	NodeFieldDockerInfo           = "dockerInfo"
-	NodeFieldEtcd                 = "etcd"
-	NodeFieldExternalIPAddress    = "externalIpAddress"
-	NodeFieldHostname             = "hostname"
-	NodeFieldIPAddress            = "ipAddress"
-	NodeFieldImported             = "imported"
-	NodeFieldInfo                 = "info"
-	NodeFieldLabels               = "labels"
-	NodeFieldLimits               = "limits"
-	NodeFieldName                 = "name"
-	NodeFieldNamespaceId          = "namespaceId"
-	NodeFieldNodeName             = "nodeName"
-	NodeFieldNodePoolID           = "nodePoolId"
-	NodeFieldNodeTaints           = "nodeTaints"
-	NodeFieldNodeTemplateID       = "nodeTemplateId"
-	NodeFieldOwnerReferences      = "ownerReferences"
-	NodeFieldPodCidr              = "podCidr"
-	NodeFieldProviderId           = "providerId"
-	NodeFieldPublicEndpoints      = "publicEndpoints"
-	NodeFieldRemoved              = "removed"
-	NodeFieldRequested            = "requested"
-	NodeFieldRequestedHostname    = "requestedHostname"
-	NodeFieldSshUser              = "sshUser"
-	NodeFieldState                = "state"
-	NodeFieldTaints               = "taints"
-	NodeFieldTransitioning        = "transitioning"
-	NodeFieldTransitioningMessage = "transitioningMessage"
-	NodeFieldUUID                 = "uuid"
-	NodeFieldUnschedulable        = "unschedulable"
-	NodeFieldVolumesAttached      = "volumesAttached"
-	NodeFieldVolumesInUse         = "volumesInUse"
-	NodeFieldWorker               = "worker"
+	NodeType                        = "node"
+	NodeFieldAllocatable            = "allocatable"
+	NodeFieldAnnotations            = "annotations"
+	NodeFieldCapacity               = "capacity"
+	NodeFieldClusterID              = "clusterId"
+	NodeFieldConditions             = "conditions"
+	NodeFieldControlPlane           = "controlPlane"
+	NodeFieldCreated                = "created"
+	NodeFieldCreatorID              = "creatorId"
+	NodeFieldCurrentNodeAnnotations = "currentNodeAnnotations"
+	NodeFieldCustomConfig           = "customConfig"
+	NodeFieldDescription            = "description"
+	NodeFieldDockerInfo             = "dockerInfo"
+	NodeFieldEtcd                   = "etcd"
+	NodeFieldExternalIPAddress      = "externalIpAddress"
+	NodeFieldHostname               = "hostname"
+	NodeFieldIPAddress              = "ipAddress"
+	NodeFieldImported               = "imported"
+	NodeFieldInfo                   = "info"
+	NodeFieldLabels                 = "labels"
+	NodeFieldLimits                 = "limits"
+	NodeFieldName                   = "name"
+	NodeFieldNamespaceId            = "namespaceId"
+	NodeFieldNodeName               = "nodeName"
+	NodeFieldNodePoolID             = "nodePoolId"
+	NodeFieldNodeTaints             = "nodeTaints"
+	NodeFieldNodeTemplateID         = "nodeTemplateId"
+	NodeFieldOwnerReferences        = "ownerReferences"
+	NodeFieldPodCidr                = "podCidr"
+	NodeFieldProviderId             = "providerId"
+	NodeFieldPublicEndpoints        = "publicEndpoints"
+	NodeFieldRemoved                = "removed"
+	NodeFieldRequested              = "requested"
+	NodeFieldRequestedHostname      = "requestedHostname"
+	NodeFieldSshUser                = "sshUser"
+	NodeFieldState                  = "state"
+	NodeFieldTaints                 = "taints"
+	NodeFieldTransitioning          = "transitioning"
+	NodeFieldTransitioningMessage   = "transitioningMessage"
+	NodeFieldUUID                   = "uuid"
+	NodeFieldUnschedulable          = "unschedulable"
+	NodeFieldVolumesAttached        = "volumesAttached"
+	NodeFieldVolumesInUse           = "volumesInUse"
+	NodeFieldWorker                 = "worker"
 )
 
 type Node struct {
 	types.Resource
-	Allocatable          map[string]string         `json:"allocatable,omitempty" yaml:"allocatable,omitempty"`
-	Annotations          map[string]string         `json:"annotations,omitempty" yaml:"annotations,omitempty"`
-	Capacity             map[string]string         `json:"capacity,omitempty" yaml:"capacity,omitempty"`
-	ClusterID            string                    `json:"clusterId,omitempty" yaml:"clusterId,omitempty"`
-	Conditions           []NodeCondition           `json:"conditions,omitempty" yaml:"conditions,omitempty"`
-	ControlPlane         bool                      `json:"controlPlane,omitempty" yaml:"controlPlane,omitempty"`
-	Created              string                    `json:"created,omitempty" yaml:"created,omitempty"`
-	CreatorID            string                    `json:"creatorId,omitempty" yaml:"creatorId,omitempty"`
-	CustomConfig         *CustomConfig             `json:"customConfig,omitempty" yaml:"customConfig,omitempty"`
-	Description          string                    `json:"description,omitempty" yaml:"description,omitempty"`
-	DockerInfo           *DockerInfo               `json:"dockerInfo,omitempty" yaml:"dockerInfo,omitempty"`
-	Etcd                 bool                      `json:"etcd,omitempty" yaml:"etcd,omitempty"`
-	ExternalIPAddress    string                    `json:"externalIpAddress,omitempty" yaml:"externalIpAddress,omitempty"`
-	Hostname             string                    `json:"hostname,omitempty" yaml:"hostname,omitempty"`
-	IPAddress            string                    `json:"ipAddress,omitempty" yaml:"ipAddress,omitempty"`
-	Imported             bool                      `json:"imported,omitempty" yaml:"imported,omitempty"`
-	Info                 *NodeInfo                 `json:"info,omitempty" yaml:"info,omitempty"`
-	Labels               map[string]string         `json:"labels,omitempty" yaml:"labels,omitempty"`
-	Limits               map[string]string         `json:"limits,omitempty" yaml:"limits,omitempty"`
-	Name                 string                    `json:"name,omitempty" yaml:"name,omitempty"`
-	NamespaceId          string                    `json:"namespaceId,omitempty" yaml:"namespaceId,omitempty"`
-	NodeName             string                    `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
-	NodePoolID           string                    `json:"nodePoolId,omitempty" yaml:"nodePoolId,omitempty"`
-	NodeTaints           []Taint                   `json:"nodeTaints,omitempty" yaml:"nodeTaints,omitempty"`
-	NodeTemplateID       string                    `json:"nodeTemplateId,omitempty" yaml:"nodeTemplateId,omitempty"`
-	OwnerReferences      []OwnerReference          `json:"ownerReferences,omitempty" yaml:"ownerReferences,omitempty"`
-	PodCidr              string                    `json:"podCidr,omitempty" yaml:"podCidr,omitempty"`
-	ProviderId           string                    `json:"providerId,omitempty" yaml:"providerId,omitempty"`
-	PublicEndpoints      []PublicEndpoint          `json:"publicEndpoints,omitempty" yaml:"publicEndpoints,omitempty"`
-	Removed              string                    `json:"removed,omitempty" yaml:"removed,omitempty"`
-	Requested            map[string]string         `json:"requested,omitempty" yaml:"requested,omitempty"`
-	RequestedHostname    string                    `json:"requestedHostname,omitempty" yaml:"requestedHostname,omitempty"`
-	SshUser              string                    `json:"sshUser,omitempty" yaml:"sshUser,omitempty"`
-	State                string                    `json:"state,omitempty" yaml:"state,omitempty"`
-	Taints               []Taint                   `json:"taints,omitempty" yaml:"taints,omitempty"`
-	Transitioning        string                    `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
-	TransitioningMessage string                    `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
-	UUID                 string                    `json:"uuid,omitempty" yaml:"uuid,omitempty"`
-	Unschedulable        bool                      `json:"unschedulable,omitempty" yaml:"unschedulable,omitempty"`
-	VolumesAttached      map[string]AttachedVolume `json:"volumesAttached,omitempty" yaml:"volumesAttached,omitempty"`
-	VolumesInUse         []string                  `json:"volumesInUse,omitempty" yaml:"volumesInUse,omitempty"`
-	Worker               bool                      `json:"worker,omitempty" yaml:"worker,omitempty"`
+	Allocatable            map[string]string         `json:"allocatable,omitempty" yaml:"allocatable,omitempty"`
+	Annotations            map[string]string         `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	Capacity               map[string]string         `json:"capacity,omitempty" yaml:"capacity,omitempty"`
+	ClusterID              string                    `json:"clusterId,omitempty" yaml:"clusterId,omitempty"`
+	Conditions             []NodeCondition           `json:"conditions,omitempty" yaml:"conditions,omitempty"`
+	ControlPlane           bool                      `json:"controlPlane,omitempty" yaml:"controlPlane,omitempty"`
+	Created                string                    `json:"created,omitempty" yaml:"created,omitempty"`
+	CreatorID              string                    `json:"creatorId,omitempty" yaml:"creatorId,omitempty"`
+	CurrentNodeAnnotations map[string]string         `json:"currentNodeAnnotations,omitempty" yaml:"currentNodeAnnotations,omitempty"`
+	CustomConfig           *CustomConfig             `json:"customConfig,omitempty" yaml:"customConfig,omitempty"`
+	Description            string                    `json:"description,omitempty" yaml:"description,omitempty"`
+	DockerInfo             *DockerInfo               `json:"dockerInfo,omitempty" yaml:"dockerInfo,omitempty"`
+	Etcd                   bool                      `json:"etcd,omitempty" yaml:"etcd,omitempty"`
+	ExternalIPAddress      string                    `json:"externalIpAddress,omitempty" yaml:"externalIpAddress,omitempty"`
+	Hostname               string                    `json:"hostname,omitempty" yaml:"hostname,omitempty"`
+	IPAddress              string                    `json:"ipAddress,omitempty" yaml:"ipAddress,omitempty"`
+	Imported               bool                      `json:"imported,omitempty" yaml:"imported,omitempty"`
+	Info                   *NodeInfo                 `json:"info,omitempty" yaml:"info,omitempty"`
+	Labels                 map[string]string         `json:"labels,omitempty" yaml:"labels,omitempty"`
+	Limits                 map[string]string         `json:"limits,omitempty" yaml:"limits,omitempty"`
+	Name                   string                    `json:"name,omitempty" yaml:"name,omitempty"`
+	NamespaceId            string                    `json:"namespaceId,omitempty" yaml:"namespaceId,omitempty"`
+	NodeName               string                    `json:"nodeName,omitempty" yaml:"nodeName,omitempty"`
+	NodePoolID             string                    `json:"nodePoolId,omitempty" yaml:"nodePoolId,omitempty"`
+	NodeTaints             []Taint                   `json:"nodeTaints,omitempty" yaml:"nodeTaints,omitempty"`
+	NodeTemplateID         string                    `json:"nodeTemplateId,omitempty" yaml:"nodeTemplateId,omitempty"`
+	OwnerReferences        []OwnerReference          `json:"ownerReferences,omitempty" yaml:"ownerReferences,omitempty"`
+	PodCidr                string                    `json:"podCidr,omitempty" yaml:"podCidr,omitempty"`
+	ProviderId             string                    `json:"providerId,omitempty" yaml:"providerId,omitempty"`
+	PublicEndpoints        []PublicEndpoint          `json:"publicEndpoints,omitempty" yaml:"publicEndpoints,omitempty"`
+	Removed                string                    `json:"removed,omitempty" yaml:"removed,omitempty"`
+	Requested              map[string]string         `json:"requested,omitempty" yaml:"requested,omitempty"`
+	RequestedHostname      string                    `json:"requestedHostname,omitempty" yaml:"requestedHostname,omitempty"`
+	SshUser                string                    `json:"sshUser,omitempty" yaml:"sshUser,omitempty"`
+	State                  string                    `json:"state,omitempty" yaml:"state,omitempty"`
+	Taints                 []Taint                   `json:"taints,omitempty" yaml:"taints,omitempty"`
+	Transitioning          string                    `json:"transitioning,omitempty" yaml:"transitioning,omitempty"`
+	TransitioningMessage   string                    `json:"transitioningMessage,omitempty" yaml:"transitioningMessage,omitempty"`
+	UUID                   string                    `json:"uuid,omitempty" yaml:"uuid,omitempty"`
+	Unschedulable          bool                      `json:"unschedulable,omitempty" yaml:"unschedulable,omitempty"`
+	VolumesAttached        map[string]AttachedVolume `json:"volumesAttached,omitempty" yaml:"volumesAttached,omitempty"`
+	VolumesInUse           []string                  `json:"volumesInUse,omitempty" yaml:"volumesInUse,omitempty"`
+	Worker                 bool                      `json:"worker,omitempty" yaml:"worker,omitempty"`
 }
 
 type NodeCollection struct {
