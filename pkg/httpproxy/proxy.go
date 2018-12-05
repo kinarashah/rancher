@@ -1,7 +1,12 @@
 package httpproxy
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -117,5 +122,27 @@ func (p *proxy) proxy(req *http.Request) error {
 	req.URL = destURL
 	req.Header = headerCopy
 
+	//p.test()
+
 	return nil
+}
+
+func (p *proxy) test() {
+	logrus.Infof("aws test")
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String("us-west-2"),
+		Credentials:credentials.NewStaticCredentials("AKIAJCOHGPJYR6HNSTXA",
+			"NwucvP4naysp4vTxtUESRNWmMDKpotet83yK0ahQ",""),
+
+	})
+	if err != nil {
+		logrus.Infof("error %v", err)
+	}
+	myEC2 := ec2.New(sess)
+	result, err := myEC2.DescribeVpcs(&ec2.DescribeVpcsInput{})
+	if err != nil {
+		logrus.Infof("error vps %v", err)
+	}
+	ans, _ := json.Marshal(result)
+	logrus.Infof("result %s", string(ans))
 }
