@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"strings"
 
@@ -42,6 +43,7 @@ func CreateOrUpdateSecrets(secrets corev1.SecretInterface, secretInfo string, fi
 			return fmt.Errorf("error creating secret %s %v", name, err)
 		}
 	}
+	logrus.Infof("secretInfo %s", secretInfo)
 	return nil
 }
 
@@ -57,6 +59,8 @@ func ReadFromSecret(secrets corev1.SecretInterface, secretInfo string, field str
 				return string(val), nil
 			}
 		}
+	} else {
+		return "", fmt.Errorf("not secret")
 	}
 	return secretInfo, nil
 }

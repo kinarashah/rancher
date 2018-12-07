@@ -486,7 +486,7 @@ func fieldMatchesOp(field types.Field, op Operation) bool {
 		return field.Update
 	case List:
 		if field.Type == "password" {
-			return false
+			return true
 		}
 		return !field.WriteOnly
 	case ListForCreate:

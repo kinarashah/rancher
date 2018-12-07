@@ -68,6 +68,10 @@ func NewProxy(prefix string, validHosts Supplier) http.Handler {
 				logrus.Infof("Failed to proxy %v: %v", req, err)
 			}
 		},
+		ModifyResponse: func(response *http.Response) error {
+			logrus.Infof("response %v", response.Body)
+			return nil
+		},
 	}
 }
 
@@ -102,6 +106,12 @@ func (p *proxy) proxy(req *http.Request) error {
 	}
 
 	auth := req.Header.Get(APIAuth)
+	logrus.Infof("auth header %s", auth)
+
+	logrus.Infof("whole request")
+	ans,  _ := json.Marshal(req)
+	logrus.Infof("%s", string(ans))
+	
 	if auth != "" {
 		headerCopy.Set("Authorization", auth)
 	}

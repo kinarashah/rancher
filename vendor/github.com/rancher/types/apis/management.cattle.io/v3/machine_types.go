@@ -43,6 +43,7 @@ type NodeTemplateSpec struct {
 	DisplayName      string `json:"displayName"`
 	Description      string `json:"description"`
 	Driver           string `json:"driver" norman:"nocreate,noupdate"`
+	CredentialName   string `json:"credentialName" norman:"type=reference[cloudCredential]"`
 	NodeCommonParams `json:",inline"`
 }
 
@@ -188,6 +189,8 @@ type NodeSpec struct {
 	InternalNodeSpec         v1.NodeSpec       `json:"internalNodeSpec"`
 	DesiredNodeLabels        map[string]string `json:"desiredNodeLabels,omitempty"`
 	DesiredNodeAnnotations   map[string]string `json:"desiredNodeAnnotations,omitempty"`
+	CurrentNodeLabels        map[string]string `json:"currentNodeLabels,omitempty"`
+	CurrentNodeAnnotations   map[string]string `json:"currentNodeAnnotations,omitempty"`
 	DesiredNodeUnschedulable string            `json:"desiredNodeUnschedulable,omitempty"`
 	NodeDrainInput           *NodeDrainInput   `json:"nodeDrainInput,omitempty"`
 }
@@ -289,4 +292,12 @@ type NodeDrainInput struct {
 	GracePeriod int `json:"gracePeriod,omitempty" norman:"default=-1"`
 	// Time to wait (in seconds) before giving up for one try
 	Timeout int `json:"timeout" norman:"min=1,max=10800,default=60"`
+}
+
+type CloudCredential struct {
+	types.Namespaced
+
+	metav1.TypeMeta `json:",inline"`
+
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 }

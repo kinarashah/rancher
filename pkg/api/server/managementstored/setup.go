@@ -2,6 +2,7 @@ package managementstored
 
 import (
 	"context"
+	"github.com/rancher/rancher/pkg/api/customization/cred"
 	"net/http"
 
 	"github.com/rancher/norman/store/crd"
@@ -271,9 +272,10 @@ func NodeTemplates(schemas *types.Schemas, management *config.ScaledContext) {
 	s := &nodeTemplateStore.Store{
 		Store:          userscope.NewStore(management.Core.Namespaces(""), schema.Store),
 		NodePoolLister: npl,
+		CredLister: management.Core.Secrets("kinara").Controller().Lister(),
 	}
 	schema.Store = s
-	schema.Validator = nodetemplate.Validator
+	//schema.Validator = nodetemplate.Validator
 }
 
 func SecretTypes(ctx context.Context, schemas *types.Schemas, management *config.ScaledContext) {
@@ -296,6 +298,18 @@ func SecretTypes(ctx context.Context, schemas *types.Schemas, management *config
 
 	secretSchema = schemas.Schema(&projectschema.Version, projectclient.CertificateType)
 	secretSchema.Store = cert.Wrap(secretSchema.Store)
+
+	mgmtSecretSchema := schemas.Schema(&managementschema.Version, client.ManagementSecretType)
+	mgmtSecretSchema.Store = proxy.NewProxyStore(ctx, management.ClientGetter,
+		config.ManagementStorageContext,
+		[]string{"api"},
+		"",
+		"v1",
+		"Secret",
+		"secrets")
+
+	credSchema := schemas.Schema(&managementschema.Version, client.CloudCredentialType)
+	credSchema.Store = cred.Wrap(mgmtSecretSchema.Store)
 }
 
 func User(schemas *types.Schemas, management *config.ScaledContext) {

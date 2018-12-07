@@ -36,7 +36,9 @@ var (
 		Init(alertTypes).
 		Init(composeType).
 		Init(projectCatalogTypes).
-		Init(clusterCatalogTypes)
+		Init(clusterCatalogTypes).
+		Init(credTypes).
+		Init(mgmtSecretTypes)
 
 	TokenSchemas = factory.Schemas(&Version).
 			Init(tokens)
@@ -49,6 +51,24 @@ func rkeTypes(schemas *types.Schemas) *types.Schemas {
 func schemaTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.
 		MustImport(&Version, v3.DynamicSchema{})
+}
+
+func credTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.
+		AddMapperForType(&Version, v3.CloudCredential{}, &m.Move{From: "name", To: "id"}).
+		AddMapperForType(&Version, v3.CloudCredential{}, &mapper.TestMapper{}).
+		MustImport(&Version, v3.CloudCredential{})
+}
+
+func mgmtSecretTypes(schemas *types.Schemas) *types.Schemas {
+	return schemas.MustImportAndCustomize(&Version, v1.Secret{}, func(schema *types.Schema) {
+		schema.CodeName = "ManagementSecret"
+		schema.CodeNamePlural = "ManagementSecrets"
+		//schema.ResourceMethods = append(schema.ResourceMethods, http.MethodPost)
+	})
+	//, struct {
+	//	NamespaceId string `json:"namespaceId,omitempty"`
+	//}{})
 }
 
 func catalogTypes(schemas *types.Schemas) *types.Schemas {
@@ -227,6 +247,8 @@ func nodeTypes(schemas *types.Schemas) *types.Schemas {
 			&m.Move{From: "nodeAnnotations", To: "annotations"},
 			&m.Drop{Field: "desiredNodeLabels"},
 			&m.Drop{Field: "desiredNodeAnnotations"},
+			&m.Drop{Field: "currentNodeLabels"},
+			&m.Drop{Field: "currentNodeAnnotations"},
 			&m.Drop{Field: "desiredNodeUnschedulable"},
 			&m.Drop{Field: "nodeDrainInput"},
 			&m.AnnotationField{Field: "publicEndpoints", List: true},
@@ -256,7 +278,7 @@ func nodeTypes(schemas *types.Schemas) *types.Schemas {
 				Input: "nodeDrainInput",
 			}
 		}, struct {
-			PublicEndpoints string `json:"publicEndpoints" norman:"type=array[publicEndpoint],nocreate,noupdate"`
+			PublicEndpoints string `json:"publicEndpoints" norman:"type=array[publicEndpoint],nocreate,noupdate"norman:"type=array[publicEndpoint],nocreate,noupdate"`
 		}{}).
 		MustImportAndCustomize(&Version, v3.NodeDriver{}, func(schema *types.Schema) {
 			schema.ResourceActions["activate"] = types.Action{

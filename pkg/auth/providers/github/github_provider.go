@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -74,6 +75,7 @@ func (g *ghProvider) TransformToAuthProvider(authConfig map[string]interface{}) 
 }
 
 func (g *ghProvider) getGithubConfigCR() (*v3.GithubConfig, error) {
+	logrus.Infof("get gh config")
 	authConfigObj, err := g.authConfigs.ObjectClient().UnstructuredClient().Get(Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve GithubConfig, error: %v", err)
@@ -96,10 +98,13 @@ func (g *ghProvider) getGithubConfigCR() (*v3.GithubConfig, error) {
 	mapstructure.Decode(metadataMap, typemeta)
 	storedGithubConfig.ObjectMeta = *typemeta
 
+	ans, _ := json.Marshal(storedGithubConfig)
+	logrus.Infof("returning storedGithub %s", string(ans))
 	return storedGithubConfig, nil
 }
 
 func (g *ghProvider) saveGithubConfig(config *v3.GithubConfig) error {
+	logrus.Infof("save gh config")
 	storedGithubConfig, err := g.getGithubConfigCR()
 	if err != nil {
 		return err
@@ -117,14 +122,24 @@ func (g *ghProvider) saveGithubConfig(config *v3.GithubConfig) error {
 
 	config.ClientSecret = "mgmt-secrets:githubconfig-clientsecret"
 
+	logrus.Infof("saving config %s",config.ClientSecret)
 	_, err = g.authConfigs.ObjectClient().Update(config.ObjectMeta.Name, config)
 	if err != nil {
 		return err
 	}
+
+	storedGithubConfig, err = g.getGithubConfigCR()
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("saved config %s", config.ClientSecret)
+
 	return nil
 }
 
 func (g *ghProvider) AuthenticateUser(input interface{}) (v3.Principal, []v3.Principal, string, error) {
+	logrus.Infof("authenticate user")
 	login, ok := input.(*v3public.GithubLogin)
 	if !ok {
 		return v3.Principal{}, nil, "", errors.New("unexpected input type")
@@ -133,6 +148,7 @@ func (g *ghProvider) AuthenticateUser(input interface{}) (v3.Principal, []v3.Pri
 }
 
 func (g *ghProvider) LoginUser(githubCredential *v3public.GithubLogin, config *v3.GithubConfig, test bool) (v3.Principal, []v3.Principal, string, error) {
+	logrus.Infof("login user")
 	var groupPrincipals []v3.Principal
 	var userPrincipal v3.Principal
 	var err error
@@ -198,6 +214,7 @@ func (g *ghProvider) LoginUser(githubCredential *v3public.GithubLogin, config *v
 }
 
 func (g *ghProvider) SearchPrincipals(searchKey, principalType string, token v3.Token) ([]v3.Principal, error) {
+	logrus.Infof("search principals")
 	var principals []v3.Principal
 	var err error
 
@@ -238,6 +255,7 @@ const (
 )
 
 func (g *ghProvider) GetPrincipal(principalID string, token v3.Token) (v3.Principal, error) {
+	logrus.Infof("get principal")
 	config, err := g.getGithubConfigCR()
 	if err != nil {
 		return v3.Principal{}, err
@@ -286,6 +304,7 @@ func (g *ghProvider) GetPrincipal(principalID string, token v3.Token) (v3.Princi
 }
 
 func (g *ghProvider) toPrincipal(principalType string, acct Account, token *v3.Token) v3.Principal {
+	logrus.Infof("to principal")
 	displayName := acct.Name
 	if displayName == "" {
 		displayName = acct.Login

@@ -3,7 +3,9 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/httperror"
@@ -30,8 +32,10 @@ func (g *ghProvider) actionHandler(actionName string, action *types.Action, requ
 	}
 
 	if actionName == "configureTest" {
+		logrus.Infof("configureTest")
 		return g.configureTest(actionName, action, request)
 	} else if actionName == "testAndApply" {
+		logrus.Infof("testAndApply")
 		return g.testAndApply(actionName, action, request)
 	}
 
@@ -94,12 +98,17 @@ func (g *ghProvider) testAndApply(actionName string, action *types.Action, reque
 		Code: githubConfigApplyInput.Code,
 	}
 
+	logrus.Infof("clientsecret test and apply %s", githubConfig.ClientSecret)
 	if githubConfig.ClientSecret != "" {
-		value, err := common.ReadFromSecret(g.secrets, githubConfig.ClientSecret, "clientsecret")
-		if err != nil {
-			return err
+		if strings.Contains(githubConfig.ClientSecret, ":") {
+			value, err := common.ReadFromSecret(g.secrets, githubConfig.ClientSecret, "clientsecret")
+			if err != nil {
+				return err
+			}
+			githubConfig.ClientSecret = value
+		} else {
+			logrus.Infof("not entering")
 		}
-		githubConfig.ClientSecret = value
 	}
 
 	//Call provider to testLogin
@@ -122,6 +131,9 @@ func (g *ghProvider) testAndApply(actionName string, action *types.Action, reque
 	if err != nil {
 		return httperror.NewAPIError(httperror.ServerError, fmt.Sprintf("Failed to save github config: %v", err))
 	}
+
+	newconfig, err := g.getGithubConfigCR()
+	logrus.Infof("in testandapply %s", newconfig.ClientSecret)
 
 	return g.tokenMGR.CreateTokenAndSetCookie(user.Name, userPrincipal, groupPrincipals, providerInfo, 0, "Token via Github Configuration", request)
 }
