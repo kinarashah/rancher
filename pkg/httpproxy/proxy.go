@@ -3,15 +3,16 @@ package httpproxy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
 
 	"github.com/sirupsen/logrus"
 )
@@ -109,9 +110,9 @@ func (p *proxy) proxy(req *http.Request) error {
 	logrus.Infof("auth header %s", auth)
 
 	logrus.Infof("whole request")
-	ans,  _ := json.Marshal(req)
+	ans, _ := json.Marshal(req)
 	logrus.Infof("%s", string(ans))
-	
+
 	if auth != "" {
 		headerCopy.Set("Authorization", auth)
 	}
@@ -140,10 +141,8 @@ func (p *proxy) proxy(req *http.Request) error {
 func (p *proxy) test() {
 	logrus.Infof("aws test")
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-west-2"),
-		Credentials:credentials.NewStaticCredentials("AKIAJCOHGPJYR6HNSTXA",
-			"NwucvP4naysp4vTxtUESRNWmMDKpotet83yK0ahQ",""),
-
+		Region:      aws.String("us-west-2"),
+		Credentials: credentials.NewStaticCredentials("", "", ""),
 	})
 	if err != nil {
 		logrus.Infof("error %v", err)
