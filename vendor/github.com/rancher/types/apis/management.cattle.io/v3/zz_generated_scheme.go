@@ -132,6 +132,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterMonitorGraphList{},
 		&ProjectMonitorGraph{},
 		&ProjectMonitorGraphList{},
+		&CloudCredential{},
+		&CloudCredentialList{},
 	)
 	return nil
 }

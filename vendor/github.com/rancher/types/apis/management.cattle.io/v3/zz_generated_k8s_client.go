@@ -70,6 +70,7 @@ type Interface interface {
 	MonitorMetricsGetter
 	ClusterMonitorGraphsGetter
 	ProjectMonitorGraphsGetter
+	CloudCredentialsGetter
 }
 
 type Clients struct {
@@ -125,6 +126,7 @@ type Clients struct {
 	MonitorMetric                           MonitorMetricClient
 	ClusterMonitorGraph                     ClusterMonitorGraphClient
 	ProjectMonitorGraph                     ProjectMonitorGraphClient
+	CloudCredential                         CloudCredentialClient
 }
 
 type Client struct {
@@ -182,6 +184,7 @@ type Client struct {
 	monitorMetricControllers                           map[string]MonitorMetricController
 	clusterMonitorGraphControllers                     map[string]ClusterMonitorGraphController
 	projectMonitorGraphControllers                     map[string]ProjectMonitorGraphController
+	cloudCredentialControllers                         map[string]CloudCredentialController
 }
 
 func Factory(ctx context.Context, config rest.Config) (context.Context, controller.Starter, error) {
@@ -367,6 +370,9 @@ func NewClientsFromInterface(iface Interface) *Clients {
 		ProjectMonitorGraph: &projectMonitorGraphClient2{
 			iface: iface.ProjectMonitorGraphs(""),
 		},
+		CloudCredential: &cloudCredentialClient2{
+			iface: iface.CloudCredentials(""),
+		},
 	}
 }
 
@@ -433,6 +439,7 @@ func NewForConfig(config rest.Config) (Interface, error) {
 		monitorMetricControllers:                           map[string]MonitorMetricController{},
 		clusterMonitorGraphControllers:                     map[string]ClusterMonitorGraphController{},
 		projectMonitorGraphControllers:                     map[string]ProjectMonitorGraphController{},
+		cloudCredentialControllers:                         map[string]CloudCredentialController{},
 	}, nil
 }
 
@@ -1092,6 +1099,19 @@ type ProjectMonitorGraphsGetter interface {
 func (c *Client) ProjectMonitorGraphs(namespace string) ProjectMonitorGraphInterface {
 	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &ProjectMonitorGraphResource, ProjectMonitorGraphGroupVersionKind, projectMonitorGraphFactory{})
 	return &projectMonitorGraphClient{
+		ns:           namespace,
+		client:       c,
+		objectClient: objectClient,
+	}
+}
+
+type CloudCredentialsGetter interface {
+	CloudCredentials(namespace string) CloudCredentialInterface
+}
+
+func (c *Client) CloudCredentials(namespace string) CloudCredentialInterface {
+	objectClient := objectclient.NewObjectClient(namespace, c.restClient, &CloudCredentialResource, CloudCredentialGroupVersionKind, cloudCredentialFactory{})
+	return &cloudCredentialClient{
 		ns:           namespace,
 		client:       c,
 		objectClient: objectClient,
