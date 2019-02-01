@@ -3,6 +3,7 @@ package multiclusterapp
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"strconv"
 	"strings"
@@ -221,6 +222,7 @@ func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID strin
 				if mcappToUpdate == nil {
 					mcappToUpdate = mcapp.DeepCopy()
 				}
+				logrus.Infof("kinara new target is not nil so updating the target with app name %s ind %v", newTarget.AppName, ind)
 				mcappToUpdate.Spec.Targets[ind].AppName = newTarget.AppName
 			}
 			batchSize--
@@ -230,9 +232,11 @@ func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID strin
 	if mcappToUpdate != nil && !reflect.DeepEqual(mcapp, mcappToUpdate) {
 		upd, err := m.multiClusterApps.Update(mcappToUpdate)
 		if err != nil {
+			logrus.Infof("kinara got error while updating mcapp %s %v", mcappToUpdate.Name, err)
 			resp.object = mcappToUpdate
 			return resp, err
 		}
+		logrus.Infof("kinara successfully updated mcapp %s %v", mcappToUpdate.Name, err)
 		resp.object = upd
 	}
 
@@ -368,10 +372,12 @@ func (m *MCAppController) createNamespaceAndApp(t *v3.Target, mcapp *v3.MultiClu
 
 	app.Spec.Answers = getAnswerMap(answerMap, t.ProjectName)
 	// Now create the App instance
+	logrus.Infof("kinara creating app %s for project %s", app.Name, projectNS)
 	createdApp, err := m.apps.Create(&app)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return nil, mcapp, err
 	}
+	logrus.Infof("kinara app successful creation %s in %s", createdApp.Name, createdApp.Namespace)
 	// App creation is successful, so set Target.AppID = createdApp.Name
 	t.AppName = createdApp.Name
 	return t, mcapp, nil
