@@ -74,6 +74,9 @@ func Register(ctx context.Context, management *config.ManagementContext) {
 	m.prtbs.AddHandler(ctx, "management-prtb-controller-global-resource", m.prtbSync)
 	projects.AddHandler(ctx, "management-mcapp-project-controller", p.sync)
 	clusters.AddHandler(ctx, "management-mcapp-cluster-controller", c.sync)
+
+	StartAppToMCAppController(ctx, management)
+	StartMCAppStateController(ctx, management)
 }
 
 func (mc *MCAppController) sync(key string, mcapp *v3.MultiClusterApp) (runtime.Object, error) {

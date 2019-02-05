@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	MultiClusterAppIDSelector = "mcapp"
 	projectLabel              = "field.cattle.io/projectId"
 )
 
@@ -85,7 +84,7 @@ func (s *AppStateCalculator) syncAppState(key string, app *pv3.App) (runtime.Obj
 	if err != nil {
 		return app, fmt.Errorf("error getting workloads %v", err)
 	}
-	if mcappName, ok := app.Labels[MultiClusterAppIDSelector]; ok {
+	if mcappName, ok := app.Labels["mcapp"]; ok {
 		s.MultiClusterApps.Controller().Enqueue(namespace.GlobalNamespace, mcappName)
 	}
 	updatingWorkloads := getUpdating(workloads)

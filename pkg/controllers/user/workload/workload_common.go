@@ -3,6 +3,7 @@ package workload
 import (
 	"context"
 	"github.com/rancher/norman/types/convert"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 
@@ -168,6 +169,7 @@ func (c *CommonController) syncDaemonSet(key string, obj *corev1beta2.DaemonSet)
 	if err != nil || w == nil {
 		return nil, err
 	}
+	logrus.Infof("calling sync %s", w.Name)
 	return nil, c.Sync(key, w)
 }
 

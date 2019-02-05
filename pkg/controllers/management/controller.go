@@ -18,7 +18,6 @@ import (
 	"github.com/rancher/rancher/pkg/controllers/management/drivers/nodedriver"
 	"github.com/rancher/rancher/pkg/controllers/management/etcdbackup"
 	"github.com/rancher/rancher/pkg/controllers/management/globaldns"
-	"github.com/rancher/rancher/pkg/controllers/management/multiclusterapp"
 	"github.com/rancher/rancher/pkg/controllers/management/node"
 	"github.com/rancher/rancher/pkg/controllers/management/nodepool"
 	"github.com/rancher/rancher/pkg/controllers/management/podsecuritypolicy"
@@ -49,7 +48,7 @@ func Register(ctx context.Context, management *config.ManagementContext, manager
 	podsecuritypolicy.Register(ctx, management)
 	etcdbackup.Register(ctx, management)
 	globaldns.Register(ctx, management)
-	multiclusterapp.Register(ctx, management)
+	//multiclusterapp.Register(ctx, management)
 
 	// Register last
 	auth.RegisterLate(ctx, management)

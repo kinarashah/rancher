@@ -77,6 +77,7 @@ func (m *MCAppController) sync(key string, mcapp *v3.MultiClusterApp) (runtime.O
 		}
 		return m.deleteApps(mcappName, mcapp)
 	}
+	logrus.Infof("cluster controller sync %s", mcapp.Name)
 	metaAccessor, err := meta.Accessor(mcapp)
 	if err != nil {
 		return mcapp, err
@@ -100,53 +101,53 @@ func (m *MCAppController) sync(key string, mcapp *v3.MultiClusterApp) (runtime.O
 		return mcapp, err
 	}
 
-	toUpgrade, err := m.toUpgrade(mcapp)
-	if err != nil {
-		return mcapp, err
-	}
+	//toUpgrade, err := m.toUpgrade(mcapp)
+	//if err != nil {
+	//	return mcapp, err
+	//}
 	batchSize := len(mcapp.Spec.Targets)
-	if toUpgrade && mcapp.Spec.UpgradeStrategy.RollingUpdate != nil {
+	if mcapp.Spec.UpgradeStrategy.RollingUpdate != nil {
 		batchSize = mcapp.Spec.UpgradeStrategy.RollingUpdate.BatchSize
 	}
 
 	// todo: need to make this generic so works for other upgrade strategies
-	resp, err := m.createApps(mcapp, externalID, answerMap, creatorID, batchSize, toUpgrade)
+	resp, err := m.createApps(mcapp, externalID, answerMap, creatorID, batchSize)
 	if err != nil {
 		return resp.object, err
 	}
 
-	if !toUpgrade {
-		if mcapp.Status.RevisionName == "" {
-			setInstalledDone(mcapp)
-			return m.setRevisionAndUpdate(mcapp, creatorID)
-		}
-		return mcapp, nil
-	}
-
-	if !resp.canProceed {
-		return mcapp, nil
-	}
-
-	if len(resp.updateApps) == 0 && v3.MultiClusterAppConditionInstalled.IsUnknown(mcapp) {
+	//if !toUpgrade {
+	if mcapp.Status.RevisionName == "" {
 		setInstalledDone(mcapp)
 		return m.setRevisionAndUpdate(mcapp, creatorID)
 	}
+	return mcapp, nil
+	//}
 
-	if resp.remaining == 0 || len(resp.updateApps) == 0 {
-		return mcapp, nil
-	}
-
-	for i, app := range resp.updateApps {
-		if resp.remaining > 0 {
-			if _, err := m.updateApp(app, answerMap, externalID, resp.projects[i]); err != nil {
-				return mcapp, err
-			}
-			resp.remaining--
-		}
-	}
-
-	setInstalledUnknown(mcapp)
-	return m.updateCondition(mcapp, setInstalledUnknown)
+	//if !resp.canProceed {
+	//	return mcapp, nil
+	//}
+	//
+	//if len(resp.updateApps) == 0 && v3.MultiClusterAppConditionInstalled.IsUnknown(mcapp) {
+	//	setInstalledDone(mcapp)
+	//	return m.setRevisionAndUpdate(mcapp, creatorID)
+	//}
+	//
+	//if resp.remaining == 0 || len(resp.updateApps) == 0 {
+	//	return mcapp, nil
+	//}
+	//
+	//for i, app := range resp.updateApps {
+	//	if resp.remaining > 0 {
+	//		if _, err := m.updateApp(app, answerMap, externalID, resp.projects[i]); err != nil {
+	//			return mcapp, err
+	//		}
+	//		resp.remaining--
+	//	}
+	//}
+	//
+	//setInstalledUnknown(mcapp)
+	//return m.updateCondition(mcapp, setInstalledUnknown)
 }
 
 type Response struct {
@@ -158,7 +159,7 @@ type Response struct {
 }
 
 func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID string, answerMap map[string]map[string]string,
-	creatorID string, batchSize int, toUpdate bool) (*Response, error) {
+	creatorID string, batchSize int) (*Response, error) {
 
 	var mcappToUpdate *v3.MultiClusterApp
 	var updateApps []*pv3.App
@@ -170,7 +171,7 @@ func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID strin
 	set := labels.Set(map[string]string{multiClusterAppIDSelector: mcapp.Name})
 
 	resp := &Response{object: mcapp}
-	updateBatchSize := batchSize
+	//updateBatchSize := batchSize
 
 	// for all targets, create the App{} instance, so that helm controller App lifecycle can pick it up
 	// only one app per project named mcapp-{{mcapp.Name}}
@@ -194,24 +195,24 @@ func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID strin
 			if val, ok := app.Labels[multiClusterAppIDSelector]; !ok || val != mcapp.Name {
 				return resp, fmt.Errorf("app %s in %s missing multi cluster app label", t.AppName, projectNS)
 			}
-			if toUpdate && updateBatchSize > 0 {
-				appUpdated := false
-				if app.Spec.ExternalID == externalID {
-					if reflect.DeepEqual(app.Spec.Answers, getAnswerMap(answerMap, t.ProjectName)) {
-						appUpdated = true
-					}
-				}
-				if appUpdated {
-					if !pv3.AppConditionInstalled.IsTrue(app) || !pv3.AppConditionDeployed.IsTrue(app) {
-						toUpdate = false
-						updateApps = []*pv3.App{}
-					}
-					continue
-				}
-				updateApps = append(updateApps, app)
-				projects = append(projects, t.ProjectName)
-				updateBatchSize--
-			}
+			//if toUpdate && updateBatchSize > 0 {
+			//	appUpdated := false
+			//	if app.Spec.ExternalID == externalID {
+			//		if reflect.DeepEqual(app.Spec.Answers, getAnswerMap(answerMap, t.ProjectName)) {
+			//			appUpdated = true
+			//		}
+			//	}
+			//	if appUpdated {
+			//		if !pv3.AppConditionInstalled.IsTrue(app) || !pv3.AppConditionDeployed.IsTrue(app) {
+			//			toUpdate = false
+			//			updateApps = []*pv3.App{}
+			//		}
+			//		continue
+			//	}
+			//	updateApps = append(updateApps, app)
+			//	projects = append(projects, t.ProjectName)
+			//	updateBatchSize--
+			//}
 			continue
 		}
 		if batchSize > 0 {
@@ -239,7 +240,7 @@ func (m *MCAppController) createApps(mcapp *v3.MultiClusterApp, externalID strin
 	}
 
 	resp.updateApps = updateApps
-	resp.canProceed = toUpdate
+	//resp.canProceed = toUpdate
 	resp.projects = projects
 	resp.remaining = batchSize
 
@@ -360,6 +361,9 @@ func (m *MCAppController) createNamespaceAndApp(t *v3.Target, mcapp *v3.MultiClu
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			return nil, mcapp, err
 		}
+	} else if ns.DeletionTimestamp != nil {
+			logrus.Errorf("ns deleting, ns deleting")
+			return nil, nil, fmt.Errorf("ns deleting %s", ns.Name)
 	}
 	app, err := m.appLister.Get(projectNS, ns.Name)
 	if err != nil {
