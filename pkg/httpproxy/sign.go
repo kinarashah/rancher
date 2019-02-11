@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/rancher/norman/httperror"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -41,6 +42,7 @@ func newSigner(auth string) Signer {
 }
 
 func (br bearer) sign(req *http.Request, secrets v1.SecretInterface, auth string) error {
+	logrus.Infof("original %v", req.Header)
 	data, secret, err := getAuthData(auth, secrets, []string{"passwordField", "credID"})
 	if err != nil {
 		return err
@@ -65,7 +67,10 @@ func (a awsv4) sign(req *http.Request, secrets v1.SecretInterface, auth string) 
 	if err != nil {
 		return err
 	}
+	logrus.Infof("original %v", req.Header)
 	service, region := a.getServiceAndRegion(req.URL.Host)
+	logrus.Infof("accessKey %s",secret["accessKey"])
+	logrus.Infof("secretKey %s",secret["secretKey"])
 	creds := credentials.NewStaticCredentials(secret["accessKey"], secret["secretKey"], "")
 	awsSigner := v4.NewSigner(creds)
 	var body []byte
@@ -79,6 +84,7 @@ func (a awsv4) sign(req *http.Request, secrets v1.SecretInterface, auth string) 
 	if err != nil {
 		return err
 	}
+	logrus.Infof("headers %v", req.Header)
 	return nil
 }
 

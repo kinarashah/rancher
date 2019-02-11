@@ -29,6 +29,7 @@ var (
 		"x-api-auth-header":       true,
 		"x-api-cattleauth-header": true,
 		"cf-connecting-ip":        true,
+		"x-forwarded-for":         true,
 		"cf-ray":                  true,
 		"impersonate-user":        true,
 		"impersonate-group":       true,
