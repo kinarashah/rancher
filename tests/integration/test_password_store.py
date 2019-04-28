@@ -49,7 +49,7 @@ def test_cluster_logging_elasticsearch(admin_mc, remove_resource):
     verifyPassword(crdClient, k8sclient, ns, name, newSecretPassword)
 
     # Test secret doesn't exist after object deletion
-    checkSecretAfterDelete(crdClient, k8sclient, ns, name, es, client)
+    checkSecret(crdClient, k8sclient, ns, name, es, client, deleteFunc)
 
 
 def test_cluster_logging_fluentd(admin_mc, remove_resource):
