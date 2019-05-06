@@ -229,6 +229,7 @@ func getResourceGroupFromDiskURI(diskURI string) (string, error) {
 	if len(fields) != 9 || fields[3] != "resourceGroups" {
 		return "", fmt.Errorf("invalid disk URI: %s", diskURI)
 	}
+	glog.V(2).Infof("no error, found resourceGroup")
 	return fields[4], nil
 }
 
@@ -236,14 +237,16 @@ func getResourceGroupFromDiskURI(diskURI string) (string, error) {
 func (c *Cloud) GetLabelsForVolume(ctx context.Context, pv *v1.PersistentVolume) (map[string]string, error) {
 	// Ignore if not AzureDisk.
 	if pv.Spec.AzureDisk == nil {
+		glog.V(2).Infof("will be skipping cuz Spec AzureDisk is nil")
 		return nil, nil
 	}
 
 	// Ignore any volumes that are being provisioned
 	if pv.Spec.AzureDisk.DiskName == volume.ProvisionedVolumeName {
+		glog.V(2).Infof("will be skipping cuz ProvisionedVolumeName is set")
 		return nil, nil
 	}
-
+	glog.V(2).Infof("will be calling azureDiskLabels with DataDiskURI")
 	return c.GetAzureDiskLabels(pv.Spec.AzureDisk.DataDiskURI)
 }
 
@@ -251,6 +254,7 @@ func (c *Cloud) GetLabelsForVolume(ctx context.Context, pv *v1.PersistentVolume)
 func (c *Cloud) GetAzureDiskLabels(diskURI string) (map[string]string, error) {
 	// Get disk's resource group.
 	diskName := path.Base(diskURI)
+	glog.V(2).Infof("inside GetAzureDiskLabels and getting resourceGroup")
 	resourceGroup, err := getResourceGroupFromDiskURI(diskURI)
 	if err != nil {
 		glog.Errorf("Failed to get resource group for AzureDisk %q: %v", diskName, err)
