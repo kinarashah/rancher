@@ -119,7 +119,7 @@ func toIgnoreForK8sCurrent(majorVersionInfo v3.K8sVersionInfo, rancherVersion st
 
 func (md *MetadataController) saveServiceOptions(K8sVersionServiceOptions map[string]v3.KubernetesServicesOptions) error {
 	rkeDataKeys := getRKEVendorOptions()
-	logrus.Debugf("svcOptions rkeDataKeys %v", rkeDataKeys)
+	logrus.Infof("svcOptions rkeDataKeys %v", rkeDataKeys)
 	for k8sVersion, serviceOptions := range K8sVersionServiceOptions {
 		if err := md.createOrUpdateServiceOptionCRD(k8sVersion, serviceOptions, rkeDataKeys); err != nil {
 			return err
