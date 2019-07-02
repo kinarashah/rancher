@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"text/template"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/rke/metadata"
 
@@ -22,6 +24,7 @@ func CompileTemplateFromMap(tmplt string, configMap interface{}) (string, error)
 
 func GetVersionedTemplates(templateName string, data map[string]interface{}, k8sVersion string) string {
 	if template, ok := data[templateName]; ok {
+		logrus.Info("found from data addonName %s %s", templateName, k8sVersion)
 		return convert.ToString(template)
 	}
 	versionedTemplate := metadata.K8sVersionToTemplates[templateName]

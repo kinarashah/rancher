@@ -45,9 +45,9 @@ func (md *MetadataController) createOrUpdateMetadata(data Data) error {
 	if err := md.saveAddons(data.K8sVersionedTemplates); err != nil {
 		return err
 	}
-	if err := md.saveWindowsInfo(data.K8sVersionWindowsSystemImages, data.K8sVersionWindowsServiceOptions); err != nil {
-		return err
-	}
+	//if err := md.saveWindowsInfo(data.K8sVersionWindowsSystemImages, data.K8sVersionWindowsServiceOptions); err != nil {
+	//	return err
+	//}
 	return nil
 }
 

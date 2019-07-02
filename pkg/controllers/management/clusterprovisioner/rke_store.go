@@ -54,5 +54,8 @@ func (a *rkeStore) GetServiceOptions(k8sVersion string) *v3.KubernetesServicesOp
 	if err != nil {
 		logrus.Errorf("getK8sServiceOptions: k8sVersion %s [%v]", k8sVersion, err)
 	}
+	if svcOptions == nil {
+		logrus.Infof("nil nil!")
+	}
 	return svcOptions
 }

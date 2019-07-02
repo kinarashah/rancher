@@ -36,7 +36,7 @@ var (
 	PeerServices                      = NewSetting("peer-service", os.Getenv("CATTLE_PEER_SERVICE"))
 	RDNSServerBaseURL                 = NewSetting("rdns-base-url", "https://api.lb.rancher.cloud/v1")
 	RkeVersion                        = NewSetting("rke-version", "")
-	RkeMetadataURL                    = NewSetting("rke-metadata-url", "https://raw.githubusercontent.com/kinarashah/kontainer-driver-metadata/test15/data/data.json")
+	RkeMetadataURL                    = NewSetting("rke-metadata-url", "https://raw.githubusercontent.com/kinarashah/kontainer-driver-metadata/test14/data/data.json")
 	RkeMetadataRefreshInterval        = NewSetting("rke-metadata-refresh-interval", "1") // minutes
 	ServerImage                       = NewSetting("server-image", "rancher/rancher")
 	ServerURL                         = NewSetting("server-url", "")
