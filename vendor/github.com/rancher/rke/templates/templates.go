@@ -31,15 +31,14 @@ func GetVersionedTemplates(templateName string, data map[string]interface{}, k8s
 	return versionedTemplate["default"]
 }
 
+func GetKubednsStubDomains(stubDomains map[string][]string) string {
+	json, _ := json.Marshal(stubDomains)
+	return string(json)
+}
+
 func GetDefaultVersionedTemplate(templateName string, data map[string]interface{}) string {
 	if template, ok := data[templateName]; ok {
 		return convert.ToString(template)
 	}
-
 	return metadata.K8sVersionToTemplates[templateName]["default"]
-}
-
-func GetKubednsStubDomains(stubDomains map[string][]string) string {
-	json, _ := json.Marshal(stubDomains)
-	return string(json)
 }

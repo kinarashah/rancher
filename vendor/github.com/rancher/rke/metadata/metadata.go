@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"strings"
 
+	mVersion "github.com/mcuadros/go-version"
 	"github.com/rancher/kontainer-driver-metadata/rke"
 	"github.com/rancher/types/apis/management.cattle.io/v3"
 )
@@ -53,12 +54,12 @@ func initK8sRKESystemImages() {
 		rkeVersionInfo, ok := rkeData.K8sVersionInfo[k8sVersion]
 		if ok {
 			// RKEVersion = 0.2.4, DeprecateRKEVersion = 0.2.2
-			if rkeVersionInfo.DeprecateRKEVersion != "" && RKEVersion >= rkeVersionInfo.DeprecateRKEVersion {
+			if rkeVersionInfo.DeprecateRKEVersion != "" && mVersion.Compare(RKEVersion, rkeVersionInfo.DeprecateRKEVersion, ">=") {
 				K8sBadVersions[k8sVersion] = true
 				continue
 			}
 			// RKEVersion = 0.2.4, MinVersion = 0.2.5, don't store
-			lowerThanMin := rkeVersionInfo.MinRKEVersion != "" && RKEVersion < rkeVersionInfo.MinRKEVersion
+			lowerThanMin := rkeVersionInfo.MinRKEVersion != "" && mVersion.Compare(RKEVersion, rkeVersionInfo.MinRKEVersion, "<")
 			if lowerThanMin {
 				continue
 			}
@@ -70,7 +71,7 @@ func initK8sRKESystemImages() {
 		maxVersionInfo, ok := rkeData.K8sVersionInfo[majorVersion]
 		if ok {
 			// RKEVersion = 0.2.4, MaxVersion = 0.2.3, don't use in current
-			greaterThanMax := maxVersionInfo.MaxRKEVersion != "" && RKEVersion > maxVersionInfo.MaxRKEVersion
+			greaterThanMax := maxVersionInfo.MaxRKEVersion != "" && mVersion.Compare(RKEVersion, maxVersionInfo.MaxRKEVersion, ">")
 			if greaterThanMax {
 				continue
 			}

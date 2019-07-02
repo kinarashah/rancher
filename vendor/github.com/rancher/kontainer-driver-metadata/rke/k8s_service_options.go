@@ -12,13 +12,13 @@ const (
 
 func loadK8sVersionServiceOptions() map[string]v3.KubernetesServicesOptions {
 	return map[string]v3.KubernetesServicesOptions{
-		"v1.15": {
-			KubeAPI:        getKubeAPIOptions115(),
-			Kubelet:        getKubeletOptions115(),
-			KubeController: getKubeControllerOptions(),
-			Kubeproxy:      getKubeProxyOptions(),
-			Scheduler:      getSchedulerOptions(),
-		},
+		//"v1.15": {
+		//	KubeAPI:        getKubeAPIOptions115(),
+		//	Kubelet:        getKubeletOptions115(),
+		//	KubeController: getKubeControllerOptions(),
+		//	Kubeproxy:      getKubeProxyOptions(),
+		//	Scheduler:      getSchedulerOptions(),
+		//},
 		"v1.14": {
 			KubeAPI:        getKubeAPIOptions114(),
 			Kubelet:        getKubeletOptions(),
