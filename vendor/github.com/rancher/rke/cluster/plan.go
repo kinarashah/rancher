@@ -381,8 +381,8 @@ func (c *Cluster) BuildKubeletProcess(host *hosts.Host, prefixPath string, svcOp
 		serviceOptions = c.GetKubernetesServicesOptions()
 	} else {
 		serviceOptions = *svcOptions
+		logrus.Infof("getting from rancher option %v", serviceOptions)
 	}
-	logrus.Infof("svcOptions %v", serviceOptions)
 	if serviceOptions.Kubelet != nil {
 		for k, v := range serviceOptions.Kubelet {
 			// if the value is empty, we remove that option

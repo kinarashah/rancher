@@ -50,6 +50,7 @@ func (a *rkeStore) GetAddonTemplates(k8sVersion string) map[string]interface{} {
 }
 
 func (a *rkeStore) GetServiceOptions(k8sVersion string) *v3.KubernetesServicesOptions {
+	logrus.Infof("serviceOptions %s k8sVersion ", k8sVersion)
 	svcOptions, err := kd.GetRKEK8sServiceOptions(k8sVersion, a.SvcOptionLister, a.SvcOptions)
 	if err != nil {
 		logrus.Errorf("getK8sServiceOptions: k8sVersion %s [%v]", k8sVersion, err)

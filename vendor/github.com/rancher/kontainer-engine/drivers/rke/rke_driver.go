@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/kontainer-engine/drivers/rke/rkecerts"
 	"github.com/rancher/kontainer-engine/drivers/util"
 	"github.com/rancher/kontainer-engine/types"
@@ -150,6 +152,7 @@ func (d *Driver) Create(ctx context.Context, opts *types.DriverOptions, info *ty
 
 	certsStr := ""
 	dialers, externalFlags := d.getFlags(rkeConfig, stateDir)
+	logrus.Info("KINARAAA version version %s", rkeConfig.Version)
 	APIURL, caCrt, clientCert, clientKey, certs, err := clusterUp(ctx, &rkeConfig, dialers, externalFlags, getData(d.DataStore, rkeConfig.Version))
 	if len(certs) > 0 {
 		certsStr, err = rkecerts.ToString(certs)
