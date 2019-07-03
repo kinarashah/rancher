@@ -45,9 +45,9 @@ func (md *MetadataController) createOrUpdateMetadata(data Data) error {
 	if err := md.saveAddons(data.K8sVersionedTemplates); err != nil {
 		return err
 	}
-	//if err := md.saveWindowsInfo(data.K8sVersionWindowsSystemImages, data.K8sVersionWindowsServiceOptions); err != nil {
-	//	return err
-	//}
+	if err := md.saveWindowsInfo(data.K8sVersionWindowsSystemImages, data.K8sVersionWindowsServiceOptions); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -270,7 +270,7 @@ func (md *MetadataController) createOrUpdateServiceOptionCRD(k8sVersion string, 
 }
 
 func (md *MetadataController) createOrUpdateWindowsServiceOptionCRD(k8sVersion string, serviceOptions v3.KubernetesServicesOptions) error {
-	svcOption, err := md.getRKEServiceOption(k8sVersion)
+	svcOption, err := md.getRKEWindowsServiceOption(k8sVersion)
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return err
@@ -381,6 +381,10 @@ func (md *MetadataController) getRKEAddon(name string) (*v3.RKEAddon, error) {
 
 func (md *MetadataController) getRKEServiceOption(k8sVersion string) (*v3.RKEK8sServiceOption, error) {
 	return md.ServiceOptionsLister.Get(namespace.GlobalNamespace, k8sVersion)
+}
+
+func (md *MetadataController) getRKEWindowsServiceOption(k8sVersion string) (*v3.RKEK8sServiceOption, error) {
+	return md.ServiceOptionsLister.Get(namespace.GlobalNamespace, getWindowsName(k8sVersion))
 }
 
 func (md *MetadataController) getRKESystemImage(k8sVersion string) (*v3.RKEK8sSystemImage, error) {

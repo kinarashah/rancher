@@ -37,7 +37,7 @@ var (
 	RDNSServerBaseURL                 = NewSetting("rdns-base-url", "https://api.lb.rancher.cloud/v1")
 	RkeVersion                        = NewSetting("rke-version", "")
 	RkeMetadataURL                    = NewSetting("rke-metadata-url", "https://raw.githubusercontent.com/kinarashah/kontainer-driver-metadata/test14/data/data.json")
-	RkeMetadataRefreshInterval        = NewSetting("rke-metadata-refresh-interval", "1") // minutes
+	RkeMetadataRefreshIntervalMins    = NewSetting("rke-metadata-refresh-interval-minutes", "1") // minutes
 	ServerImage                       = NewSetting("server-image", "rancher/rancher")
 	ServerURL                         = NewSetting("server-url", "")
 	ServerVersion                     = NewSetting("server-version", "dev")

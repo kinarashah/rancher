@@ -68,20 +68,22 @@ func Register(ctx context.Context, management *config.ManagementContext) {
 	}
 
 	// load values on startup and start ticker
-	logrus.Infof("driverMetadata: loading data")
-	m.refresh(settings.RkeMetadataURL.Get())
+	m.refresh(settings.RkeMetadataURL.Get(), true)
 	m.initTicker(ctx)
 
 	mgmt.Settings("").AddHandler(ctx, "rke-metadata-handler", m.sync)
 }
 
 func (m *MetadataController) sync(key string, test *v3.Setting) (runtime.Object, error) {
-	if test == nil || (test.Name != "rke-metadata-url" && test.Name != "rke-metadata-refresh-interval") {
+	if test != nil {
+		logrus.Infof("sync? %s", test.Name)
+	}
+	if test == nil || (test.Name != "rke-metadata-url" && test.Name != "rke-metadata-refresh-interval-minutes") {
 		return nil, nil
 	}
 	url, interval, err := getSettingValues()
 	if err != nil {
-		return nil, fmt.Errorf("driverMetadata error getting interval in int %s %v", settings.RkeMetadataRefreshInterval.Get(), err)
+		return nil, fmt.Errorf("driverMetadata error getting interval in int %s %v", settings.RkeMetadataRefreshIntervalMins.Get(), err)
 	}
 	if tickerData != nil {
 		if tickerData.url != url || tickerData.interval != interval {
@@ -102,7 +104,7 @@ func (m *MetadataController) sync(key string, test *v3.Setting) (runtime.Object,
 func (m *MetadataController) initTicker(ctx context.Context) {
 	url, interval, err := getSettingValues()
 	if err != nil {
-		panic(fmt.Errorf("driverMetadata error getting interval in int %s %v", settings.RkeMetadataRefreshInterval.Get(), err))
+		panic(fmt.Errorf("driverMetadata error getting interval in int %s %v", settings.RkeMetadataRefreshIntervalMins.Get(), err))
 	}
 	cctx, cancel := context.WithCancel(ctx)
 
@@ -115,16 +117,18 @@ func (m *MetadataController) startTicker(ctx context.Context, tickerData *Ticker
 	checkInterval, url := tickerData.interval, tickerData.url
 	for range ticker.Context(ctx, checkInterval) {
 		logrus.Infof("driverMetadata: checking rke-metadata-url every %v", checkInterval)
-		m.refresh(url)
+		m.refresh(url, false)
 	}
 }
 
-func (m *MetadataController) refresh(url string) {
+func (m *MetadataController) refresh(url string, init bool) {
 	data, err := loadData(url)
 	if err != nil {
-		logrus.Errorf("error loading rke data, using stored defaults %v", err)
-		if err := m.createOrUpdateMetadataDefaults(); err != nil {
-			logrus.Errorf("driverMetadata %v", err)
+		if init {
+			logrus.Errorf("error loading rke data, using stored defaults %v", err)
+			if err := m.createOrUpdateMetadataDefaults(); err != nil {
+				logrus.Errorf("driverMetadata %v", err)
+			}
 		}
 		return
 	}
@@ -135,7 +139,7 @@ func (m *MetadataController) refresh(url string) {
 }
 
 func getSettingValues() (string, time.Duration, error) {
-	n, err := strconv.Atoi(settings.RkeMetadataRefreshInterval.Get())
+	n, err := strconv.Atoi(settings.RkeMetadataRefreshIntervalMins.Get())
 	if err != nil {
 		return "", 0, err
 	}

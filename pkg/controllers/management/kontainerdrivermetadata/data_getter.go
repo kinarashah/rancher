@@ -61,7 +61,6 @@ func GetRKEAddonTemplate(k8sVersion string, addonName string, addonLister v3.RKE
 			continue
 		}
 		if addon.Labels[sendRKELabel] == "false" {
-			logrus.Infof("sendRKELabel false addonName %s, k8sVersion %s", addonName, k8sVersion)
 			return "", nil
 		}
 		return addon.Template, err
@@ -76,7 +75,6 @@ func GetRKEAddonTemplate(k8sVersion string, addonName string, addonLister v3.RKE
 			continue
 		}
 		if addon.Labels[sendRKELabel] == "false" {
-			logrus.Infof("sendRKELabel false addonName %s, k8sVersion %s", addonName, k8sVersion)
 			return "", nil
 		}
 		return addon.Template, err
