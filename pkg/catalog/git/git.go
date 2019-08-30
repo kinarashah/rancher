@@ -2,9 +2,12 @@ package git
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 	"os/exec"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	catUtil "github.com/rancher/rancher/pkg/catalog/utils"
@@ -70,4 +73,9 @@ func FormatURL(pathURL, username, password string) string {
 		}
 	}
 	return pathURL
+}
+
+func CloneDepth(depth int, path, url, branch string) error {
+	logrus.Info("entering clone depth")
+	return runcmd("git", "clone", "-b", branch, "--single-branch", fmt.Sprintf("--depth=%v", depth), url, path)
 }
