@@ -102,7 +102,7 @@ COPY entrypoint.sh rancher /usr/bin/
 COPY jailer.sh /usr/bin/
 RUN chmod +x /usr/bin/entrypoint.sh
 
-ENV CATTLE_AGENT_IMAGE ${IMAGE_REPO}/rancher-agent:${VERSION}
+ENV CATTLE_AGENT_IMAGE ${IMAGE_REPO}/rancher-agent:master
 ENV CATTLE_SERVER_IMAGE ${IMAGE_REPO}/rancher
 ENV ETCD_UNSUPPORTED_ARCH=${ARCH}
 

@@ -24,7 +24,7 @@ fi
 cp ../bin/rancher ../bin/agent .
 
 IMAGE=${REPO}/rancher:${TAG}
-AGENT_IMAGE=${REPO}/rancher-agent:${TAG}
+AGENT_IMAGE=${REPO}/rancher-agent:master
 
 if [ ${ARCH} == arm64 ]; then
     sed -i -e '$a\' -e 'ENV ETCD_UNSUPPORTED_ARCH=arm64' Dockerfile
