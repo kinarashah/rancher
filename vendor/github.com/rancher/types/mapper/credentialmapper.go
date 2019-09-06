@@ -7,17 +7,39 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/values"
+	"github.com/sirupsen/logrus"
 )
+
+const credAnn = "io.cattle.cloud.cred_name"
 
 type CredentialMapper struct {
 }
 
 func (s CredentialMapper) FromInternal(data map[string]interface{}) {
 	formatData(data)
+	name := convert.ToString(values.GetValueN(data, "annotations", credAnn))
+	if name != "" {
+		data["name"] = name
+	} else {
+		id := convert.ToString(values.GetValueN(data, "id"))
+		if id != "" {
+			data["name"] = id
+		}
+	}
 	delete(data, "data")
 }
 
 func (s CredentialMapper) ToInternal(data map[string]interface{}) error {
+	logrus.Infof("toInternal %v", data)
+	if name, ok := data["name"]; ok && name != nil {
+		anns := convert.ToMapInterface(data["annotations"])
+		if anns == nil {
+			anns = map[string]interface{}{}
+		}
+		anns[credAnn] = convert.ToString(name)
+		values.PutValue(data, anns, "annotations")
+		data["name"] = ""
+	}
 	updateData(data)
 	return nil
 }
