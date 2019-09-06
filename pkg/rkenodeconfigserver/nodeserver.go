@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/api/customization/clusterregistrationtokens"
+	kd "github.com/rancher/rancher/pkg/controllers/management/kontainerdrivermetadata"
 	"github.com/rancher/rancher/pkg/image"
 	"github.com/rancher/rancher/pkg/librke"
 	"github.com/rancher/rancher/pkg/rkeworker"
@@ -85,8 +86,10 @@ func (n *RKENodeConfigServer) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 
 	var nodeConfig *rkeworker.NodeConfig
 	if isNonWorkerOnly(client.Node.Status.NodeConfig.Role) {
+		// etcd  or control
 		nodeConfig, err = n.nonWorkerConfig(req.Context(), client.Cluster, client.Node)
 	} else {
+		// worker or combination
 		if client.Cluster.Status.AppliedSpec.RancherKubernetesEngineConfig == nil {
 			rw.WriteHeader(http.StatusServiceUnavailable)
 			return
@@ -132,7 +135,7 @@ func (n *RKENodeConfigServer) nonWorkerConfig(ctx context.Context, cluster *v3.C
 		return nil, err
 	}
 
-	plan, err := librke.New().GeneratePlan(ctx, rkeConfig, infos)
+	plan, err := librke.New().GeneratePlan(ctx, rkeConfig, infos, n.getServiceOptions(cluster.Spec.RancherKubernetesEngineConfig.Version))
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +188,8 @@ func (n *RKENodeConfigServer) nodeConfig(ctx context.Context, cluster *v3.Cluste
 	rkeConfig := spec.RancherKubernetesEngineConfig
 	filterHostForSpec(rkeConfig, node)
 	logrus.Debugf("The number of nodes sent to the plan: %v", len(rkeConfig.Nodes))
-	plan, err := librke.New().GeneratePlan(ctx, rkeConfig, infos)
+	logrus.Infof("calling plan with service options")
+	plan, err := librke.New().GeneratePlan(ctx, rkeConfig, infos, n.getServiceOptions(cluster.Spec.RancherKubernetesEngineConfig.Version))
 	if err != nil {
 		return nil, err
 	}
@@ -320,4 +324,18 @@ func appendTaintsToKubeletArgs(processes map[string]v3.Process, nodeConfigTaints
 		processes["kubelet"] = kubelet
 	}
 	return processes
+}
+
+func (n *RKENodeConfigServer) getServiceOptions(k8sVersion string) map[string]interface{} {
+	data := map[string]interface{}{}
+	logrus.Infof("data, k8sversion %s", k8sVersion)
+	svcOptions, err := kd.GetRKEK8sServiceOptions(k8sVersion, n.serviceOptionsLister, n.serviceOptions)
+	if err != nil {
+		logrus.Errorf("getK8sServiceOptions: k8sVersion %s [%v]", k8sVersion, err)
+	}
+	if svcOptions != nil {
+		data["k8s-service-options"] = svcOptions
+		logrus.Infof("found svc options for %s", k8sVersion)
+	}
+	return data
 }

@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/rkecerts"
 )
@@ -32,6 +34,7 @@ func ExecutePlan(ctx context.Context, nodeConfig *NodeConfig, writeCertOnly bool
 		f.write(file.Name, file.Contents)
 	}
 	if writeCertOnly {
+		logrus.Info("returning because writeCertOnly!")
 		return nil
 	}
 
@@ -50,6 +53,7 @@ func ExecutePlan(ctx context.Context, nodeConfig *NodeConfig, writeCertOnly bool
 
 	for name, process := range nodeConfig.Processes {
 		if !strings.Contains(name, "sidekick") {
+			logrus.Infof("calling runProcess %s %v %v", name, process, bundleChanged)
 			if err := runProcess(ctx, name, process, true, bundleChanged); err != nil {
 				return err
 			}
