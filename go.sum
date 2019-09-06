@@ -182,6 +182,10 @@ github.com/json-iterator/go v1.1.7/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/u
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
+github.com/kinarashah/rke v0.1.1-rc1.0.20190906230827-7864628e5413 h1:95KhoL+9cf4HN7lr+2tSQB0LtFiOKon6Bei6zq8PIss=
+github.com/kinarashah/rke v0.1.1-rc1.0.20190906230827-7864628e5413/go.mod h1:hPChYcMdDwjQxR/WFvosZW++0frw+H2nO9Ni/L24OPI=
+github.com/kinarashah/rke v0.1.1-rc1.0.20190906233146-3059c5c4cd4b h1:BEyo/GL3tM2ge2zSmvibTIEq0+hVzGqQIl1e41K5c58=
+github.com/kinarashah/rke v0.1.1-rc1.0.20190906233146-3059c5c4cd4b/go.mod h1:hPChYcMdDwjQxR/WFvosZW++0frw+H2nO9Ni/L24OPI=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1 h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=

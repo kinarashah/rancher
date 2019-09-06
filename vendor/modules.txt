@@ -332,7 +332,7 @@ github.com/rancher/norman/types/factory
 github.com/rancher/rdns-server/model
 # github.com/rancher/remotedialer v0.2.2
 github.com/rancher/remotedialer
-# github.com/rancher/rke v0.3.0-rc9.0.20190905183653-96802dfc722c
+# github.com/rancher/rke v0.3.0-rc9.0.20190905183653-96802dfc722c => github.com/kinarashah/rke v0.1.1-rc1.0.20190906233146-3059c5c4cd4b
 github.com/rancher/rke/util
 github.com/rancher/rke/pki/cert
 github.com/rancher/rke/cloudprovider/aws
@@ -369,13 +369,13 @@ github.com/rancher/types/client/project/v3
 github.com/rancher/types/user
 github.com/rancher/types/compose
 github.com/rancher/types/config/dialer
+github.com/rancher/types/apis/apps/v1
 github.com/rancher/types/apis/apiregistration.k8s.io/v1
 github.com/rancher/types/client/management/v3public
 github.com/rancher/types/apis/management.cattle.io/v3public
 github.com/rancher/types/apis/rbac.authorization.k8s.io/v1
 github.com/rancher/types/apis/management.cattle.io/v3public/schema
 github.com/rancher/types/factory
-github.com/rancher/types/apis/apps/v1
 github.com/rancher/types/apis/monitoring.coreos.com/v1
 github.com/rancher/types/apis/extensions/v1beta1
 github.com/rancher/types/apis/cluster.cattle.io/v3
@@ -581,11 +581,11 @@ gopkg.in/yaml.v2
 k8s.io/api/core/v1
 k8s.io/api/policy/v1beta1
 k8s.io/api/rbac/v1
+k8s.io/api/apps/v1
 k8s.io/api/authorization/v1
 k8s.io/api/extensions/v1beta1
 k8s.io/api/batch/v1
 k8s.io/api/networking/v1
-k8s.io/api/apps/v1
 k8s.io/api/batch/v1beta1
 k8s.io/api/storage/v1
 k8s.io/api/autoscaling/v2beta2
@@ -633,11 +633,11 @@ k8s.io/apimachinery/pkg/apis/meta/v1/unstructured
 k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/util/cache
 k8s.io/apimachinery/pkg/util/validation/field
+k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/util/validation
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/types
 k8s.io/apimachinery/pkg/selection
-k8s.io/apimachinery/pkg/runtime/schema
 k8s.io/apimachinery/pkg/util/proxy
 k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/fields
