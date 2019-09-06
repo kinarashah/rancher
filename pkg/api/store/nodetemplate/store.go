@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rancher/norman/api/access"
+	client "github.com/rancher/types/client/management/v3"
+
 	"github.com/rancher/norman/httperror"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/convert"
@@ -12,6 +15,7 @@ import (
 	"github.com/rancher/rancher/pkg/ref"
 	corev1 "github.com/rancher/types/apis/core/v1"
 	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	managementschema "github.com/rancher/types/apis/management.cattle.io/v3/schema"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -36,23 +40,32 @@ func (s *Store) Delete(apiContext *types.APIContext, schema *types.Schema, id st
 }
 
 func (s *Store) Create(apiContext *types.APIContext, schema *types.Schema, data map[string]interface{}) (map[string]interface{}, error) {
-	if err := s.replaceCloudCredFields(data); err != nil {
+	if err := s.replaceCloudCredFields(apiContext, data); err != nil {
 		return data, err
 	}
 	return s.Store.Create(apiContext, schema, data)
 }
 
 func (s *Store) Update(apiContext *types.APIContext, schema *types.Schema, data map[string]interface{}, id string) (map[string]interface{}, error) {
-	if err := s.replaceCloudCredFields(data); err != nil {
+	if err := s.replaceCloudCredFields(apiContext, data); err != nil {
 		return data, err
 	}
 	return s.Store.Update(apiContext, schema, data, id)
 }
 
-func (s *Store) replaceCloudCredFields(data map[string]interface{}) error {
+func (s *Store) replaceCloudCredFields(apiContext *types.APIContext, data map[string]interface{}) error {
 	credID := convert.ToString(values.GetValueN(data, "cloudCredentialId"))
 	if credID == "" {
 		return nil
+	}
+	var accessCred client.CloudCredential
+	if err := access.ByID(apiContext, &managementschema.Version, client.CloudCredentialType, credID, &accessCred); err != nil {
+		if apiError, ok := err.(*httperror.APIError); ok {
+			if apiError.Code.Status == httperror.PermissionDenied.Status {
+				return httperror.NewAPIError(httperror.PermissionDenied, fmt.Sprintf("forbidden to access cloud credential %v", credID))
+			}
+		}
+		return err
 	}
 	ns, name := ref.Parse(credID)
 	if ns == "" || name == "" {
