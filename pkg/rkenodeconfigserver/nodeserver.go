@@ -325,14 +325,15 @@ func appendTaintsToKubeletArgs(processes map[string]v3.Process, nodeConfigTaints
 
 func (n *RKENodeConfigServer) getServiceOptions(k8sVersion string) map[string]interface{} {
 	data := map[string]interface{}{}
-	svcOptions, err := kd.GetRKEK8sServiceOptions(k8sVersion, n.serviceOptionsLister, n.serviceOptions)
+	svcOptions, err := kd.GetRKEK8sServiceOptions(k8sVersion, n.serviceOptionsLister, n.serviceOptions, kd.Linux)
 	if err != nil {
 		logrus.Errorf("getK8sServiceOptions: k8sVersion %s [%v]", k8sVersion, err)
 	}
 	if svcOptions != nil {
 		data["k8s-service-options"] = svcOptions
 	}
-	svcOptionsWindows, err := kd.GetRKEK8sServiceOptionsWindows(k8sVersion, n.serviceOptionsLister, n.serviceOptions)
+
+	svcOptionsWindows, err := kd.GetRKEK8sServiceOptions(k8sVersion, n.serviceOptionsLister, n.serviceOptions, kd.Windows)
 	if err != nil {
 		logrus.Errorf("getK8sServiceOptionsWindows: k8sVersion %s [%v]", k8sVersion, err)
 	}
