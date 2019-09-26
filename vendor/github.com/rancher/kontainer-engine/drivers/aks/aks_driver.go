@@ -792,11 +792,6 @@ func (d *Driver) createOrUpdate(ctx context.Context, options *types.DriverOption
 			osDiskSizeGBPointer = to.Int32Ptr(int32(driverState.AgentOsdiskSizeGB))
 		}
 
-		agentDNSPrefix := driverState.AgentDNSPrefix
-		if agentDNSPrefix == "" {
-			agentDNSPrefix = driverState.getDefaultDNSPrefix() + "-agent"
-		}
-
 		agentStorageProfile := containerservice.ManagedDisks
 		if driverState.AgentStorageProfile != "" {
 			agentStorageProfile = containerservice.StorageProfileTypes(driverState.AgentStorageProfile)
@@ -809,7 +804,6 @@ func (d *Driver) createOrUpdate(ctx context.Context, options *types.DriverOption
 
 		agentPoolProfiles = &[]containerservice.ManagedClusterAgentPoolProfile{
 			{
-				DNSPrefix:      to.StringPtr(agentDNSPrefix),
 				Count:          countPointer,
 				MaxPods:        maxPodsPointer,
 				Name:           to.StringPtr(driverState.AgentName),
@@ -847,7 +841,7 @@ func (d *Driver) createOrUpdate(ctx context.Context, options *types.DriverOption
 			AgentPoolProfiles: agentPoolProfiles,
 			LinuxProfile:      linuxProfile,
 			NetworkProfile:    networkProfile,
-			ServicePrincipalProfile: &containerservice.ServicePrincipalProfile{
+			ServicePrincipalProfile: &containerservice.ManagedClusterServicePrincipalProfile{
 				ClientID: to.StringPtr(driverState.ClientID),
 				Secret:   to.StringPtr(driverState.ClientSecret),
 			},

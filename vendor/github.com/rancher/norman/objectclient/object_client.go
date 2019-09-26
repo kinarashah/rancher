@@ -248,7 +248,7 @@ func (p *ObjectClient) Watch(opts metav1.ListOptions) (watch.Interface, error) {
 	}
 	streamDecoder := streaming.NewDecoder(json2.Framer.NewFrameReader(r), embeddedDecoder)
 	decoder := restclientwatch.NewDecoder(streamDecoder, embeddedDecoder)
-	return watch.NewStreamWatcher(decoder), nil
+	return watch.NewStreamWatcher(decoder, nil), nil
 }
 
 type structuredDecoder struct {
