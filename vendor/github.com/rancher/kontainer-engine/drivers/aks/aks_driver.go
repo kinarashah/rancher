@@ -210,10 +210,6 @@ func (d *Driver) GetDriverCreateOptions(ctx context.Context) (*types.DriverFlags
 		Usage: `The name of an existing Azure Log Analytics Workspace to use for storing monitoring data. If not specified, uses '{resource group}-{subscription id}-{location code}'.`,
 	}
 
-	driverFlag.Options["agent-dns-prefix"] = &types.Flag{
-		Type:  types.StringType,
-		Usage: "DNS prefix to be used to create the FQDN for the agent pool.",
-	}
 	driverFlag.Options["count"] = &types.Flag{
 		Type:  types.IntType,
 		Usage: "Number of machines (VMs) in the agent pool. Allowed values must be in the range of 1 to 100 (inclusive).",
@@ -428,7 +424,6 @@ func getStateFromOptions(driverOptions *types.DriverOptions) (state, error) {
 	state.LogAnalyticsWorkspaceResourceGroup = options.GetValueFromDriverOptions(driverOptions, types.StringType, "log-analytics-workspace-resource-group", "logAnalyticsWorkspaceResourceGroup").(string)
 	state.LogAnalyticsWorkspace = options.GetValueFromDriverOptions(driverOptions, types.StringType, "log-analytics-workspace", "logAnalyticsWorkspace").(string)
 
-	state.AgentDNSPrefix = options.GetValueFromDriverOptions(driverOptions, types.StringType, "agent-dns-prefix", "agentDnsPrefix").(string)
 	state.AgentCount = options.GetValueFromDriverOptions(driverOptions, types.IntType, "count").(int64)
 	state.AgentMaxPods = options.GetValueFromDriverOptions(driverOptions, types.IntType, "max-pods", "maxPods").(int64)
 	state.AgentName = options.GetValueFromDriverOptions(driverOptions, types.StringType, "agent-pool-name", "agentPoolName").(string)

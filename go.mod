@@ -4,24 +4,19 @@ go 1.12
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.12.0
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v12.2.0+incompatible
 	github.com/crewjam/saml => github.com/rancher/saml v0.0.0-20180713225824-ce1532152fde
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.3
 
-	github.com/rancher/kontainer-driver-metadata => github.com/kinarashah/kontainer-driver-metadata v0.0.0-20190927015404-efac490c227c
-	github.com/rancher/kontainer-engine => github.com/kinarashah/kontainer-engine v0.0.4-dev.0.20190927162425-da788ae1a8ac
-	github.com/rancher/norman => github.com/kinarashah/norman v0.0.0-20190926220128-3e47c71200c0
-	github.com/rancher/rke => github.com/kinarashah/rke v0.1.1-rc1.0.20190927160722-356af9d83149
-	github.com/rancher/types => github.com/kinarashah/types v0.0.0-20190927014631-960525348434
-
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
 	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20190918160949-bfa5e2e684ad
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.0.0-20190918162238-f783a3654da8
-	k8s.io/client-go => github.com/kinarashah/client-go v0.0.0-20190926224157-188ec9a7c224
+	k8s.io/client-go => github.com/rancher/client-go v1.16.0-rancher.3
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20190918163234-a9c1f33e9fb9
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.0.0-20190918163108-da9fdfce26bb
 	k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190912054826-cd179ad6a269
@@ -34,6 +29,7 @@ replace (
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.0.0-20190918162820-3b5c1246eb18
 	k8s.io/kubectl => k8s.io/kubectl v0.0.0-20190918164019-21692a0861df
 	k8s.io/kubelet => k8s.io/kubelet v0.0.0-20190918162654-250a1838aa2c
+	k8s.io/kubernetes => k8s.io/kubernetes v1.16.0
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.0.0-20190918163543-cfa506e53441
 	k8s.io/metrics => k8s.io/metrics v0.0.0-20190918162108-227c654b2546
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.0.0-20190918161442-d4c9c65c82af
@@ -41,7 +37,6 @@ replace (
 
 require (
 	github.com/Azure/azure-sdk-for-go v32.5.0+incompatible
-	github.com/Azure/go-autorest v12.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.9.0
 	github.com/Azure/go-autorest/autorest/adal v0.5.0
 	github.com/DataDog/zstd v1.4.1 // indirect
@@ -78,13 +73,13 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/common v0.6.0
-	github.com/rancher/kontainer-driver-metadata v0.0.0-20190923200325-2253b7228ad2
-	github.com/rancher/kontainer-engine v0.0.4-dev
-	github.com/rancher/norman v0.0.0-20190917211548-a40a48add2fb
+	github.com/rancher/kontainer-driver-metadata v0.0.0-20190930170218-cea47774d036
+	github.com/rancher/kontainer-engine v0.0.4-dev.0.20190930174220-db9e24343393
+	github.com/rancher/norman v0.0.0-20190930164704-e09204b63081
 	github.com/rancher/rdns-server v0.0.0-20180802070304-bf662911db6a
 	github.com/rancher/remotedialer v0.2.3-0.20190906213150-8b3983d91ed6
-	github.com/rancher/rke v0.3.0-rc10.0.20190910214044-f622c8b94257
-	github.com/rancher/types v0.0.0-20190923165440-59fbe5e3a97f
+	github.com/rancher/rke v0.3.0-rc11.0.20190930172345-88449ec73b31
+	github.com/rancher/types v0.0.0-20190930165650-6bbedae77a35
 	github.com/rancher/wrangler v0.1.6-0.20190822171720-e78d8316ee95
 	github.com/robfig/cron v1.1.0
 	github.com/russellhaering/goxmldsig v0.0.0-20180122054445-a348271703b2 // indirect
