@@ -7,7 +7,8 @@ import (
 	"github.com/rancher/norman/api/access"
 	"github.com/rancher/norman/httperror"
 	"github.com/rancher/norman/types"
-	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/types/config/dialer"
 	"github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ type Handler struct {
 	ClusterAlertRule v3.ClusterAlertRuleInterface
 	ProjectAlertRule v3.ProjectAlertRuleInterface
 	Notifiers        v3.NotifierInterface
+	DialerFactory        dialer.Factory
 }
 
 func RuleFormatter(apiContext *types.APIContext, resource *types.RawResource) {

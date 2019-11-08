@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/rancher/types/config/dialer"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -39,7 +40,7 @@ type wechatResponse struct {
 	Error string `json:"error"`
 }
 
-func SendMessage(notifier *v3.Notifier, recipient string, msg *Message) error {
+func SendMessage(notifier *v3.Notifier, recipient string, msg *Message, dialer dialer.Dialer) error {
 	if notifier.Spec.SlackConfig != nil {
 		if recipient == "" {
 			recipient = notifier.Spec.SlackConfig.DefaultRecipient
@@ -52,7 +53,7 @@ func SendMessage(notifier *v3.Notifier, recipient string, msg *Message) error {
 		if recipient == "" {
 			recipient = s.DefaultRecipient
 		}
-		return TestEmail(s.Host, s.Password, s.Username, int(s.Port), s.TLS, msg.Title, msg.Content, recipient, s.Sender)
+		return TestEmail(s.Host, s.Password, s.Username, int(s.Port), s.TLS, msg.Title, msg.Content, recipient, s.Sender, dialer)
 	}
 
 	if notifier.Spec.PagerdutyConfig != nil {
@@ -283,11 +284,11 @@ func TestSlack(url, channel, msg string, cfg *v3.HTTPClientConfig) error {
 	return nil
 }
 
-func TestEmail(host, password, username string, port int, requireTLS bool, title, content, receiver, sender string) error {
+func TestEmail(host, password, username string, port int, requireTLS bool, title, content, receiver, sender string, dialer dialer.Dialer) error {
 	if content == "" {
 		content = "Alert Name: Test SMTP setting"
 	}
-	c, err := smtpInit(host, port)
+	c, err := smtpInit(host, port, dialer)
 	if err != nil {
 		return err
 	}
@@ -299,7 +300,7 @@ func TestEmail(host, password, username string, port int, requireTLS bool, title
 	return smtpSend(c, title, content, receiver, sender)
 }
 
-func smtpInit(host string, port int) (*smtp.Client, error) {
+func smtpInit(host string, port int, dialer dialer.Dialer) (*smtp.Client, error) {
 	var c *smtp.Client
 	smartHost := host + ":" + strconv.Itoa(port)
 	timeout := 15 * time.Second
@@ -313,7 +314,15 @@ func smtpInit(host string, port int) (*smtp.Client, error) {
 			return nil, fmt.Errorf("Failed to connect smtp server: %v", err)
 		}
 	} else {
-		conn, err := net.DialTimeout("tcp", smartHost, timeout)
+		var (
+			conn net.Conn
+			err error
+		)
+		//if dialer != nil {
+		//	conn, err = dialer("tcp", smartHost)
+		//} else {
+			conn, err = net.DialTimeout("tcp", smartHost, timeout)
+		//}
 		if err != nil {
 			return nil, fmt.Errorf("Failed to connect smtp server: %v", err)
 		}
@@ -321,6 +330,7 @@ func smtpInit(host string, port int) (*smtp.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Failed to connect smtp server: %v", err)
 		}
+
 	}
 	return c, nil
 }

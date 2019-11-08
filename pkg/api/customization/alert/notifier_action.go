@@ -2,6 +2,8 @@ package alert
 
 import (
 	"encoding/json"
+	"github.com/rancher/norman/types/convert"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 
 	"github.com/pkg/errors"
@@ -9,7 +11,9 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/notifiers"
 	"github.com/rancher/rancher/pkg/ref"
-	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
+	client "github.com/rancher/types/client/management/v3"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,19 +42,39 @@ func (h *Handler) testNotifier(actionName string, action *types.Action, apiConte
 	if err != nil {
 		return errors.Wrap(err, "reading request body error")
 	}
+	datamp, err := convert.EncodeToMap(data)
+	logrus.Infof("data %v", datamp)
+
 	input := &struct {
 		Message string
 		v3.NotifierSpec
 	}{}
+
+	clientNotifier := &struct {
+		client.NotifierSpec
+	}{}
+
 	if err = json.Unmarshal(data, input); err != nil {
 		return errors.Wrap(err, "unmarshaling input error")
+	}
+
+	if err = json.Unmarshal(data, clientNotifier); err != nil {
+		return errors.Wrap(err, "unmarshaling input error client")
 	}
 	notifier := &v3.Notifier{
 		Spec: input.NotifierSpec,
 	}
+	ans, _ := json.Marshal(input)
+	logrus.Infof("input %v", string(ans))
+
+	ans, _ = json.Marshal(clientNotifier)
+	logrus.Infof("client %v", string(ans))
+
+
 	msg := input.Message
+	ns, id := ref.Parse(apiContext.ID)
+	//logrus.Infof("kinara clusterName %s", convert.ToString(convert.ToMapInterface(data)["clusterId"]))
 	if apiContext.ID != "" {
-		ns, id := ref.Parse(apiContext.ID)
 		notifier, err = h.Notifiers.GetNamespaced(ns, id, metav1.GetOptions{})
 		if err != nil {
 			return err
@@ -62,5 +86,10 @@ func (h *Handler) testNotifier(actionName string, action *types.Action, apiConte
 	if notifier.Spec.SMTPConfig != nil {
 		notifierMessage.Title = testSMTPTitle
 	}
-	return notifiers.SendMessage(notifier, "", notifierMessage)
+	logrus.Infof("kinara cluster name %s", clientNotifier.ClusterID)
+	dialer, err := h.DialerFactory.ClusterDialer(clientNotifier.ClusterID)
+	if err != nil {
+		logrus.Infof("kinara error getting dialer? %v", err)
+	}
+	return notifiers.SendMessage(notifier, "", notifierMessage, dialer)
 }
