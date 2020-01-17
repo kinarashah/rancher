@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/rkecerts"
 )
@@ -32,11 +34,13 @@ func ExecutePlan(ctx context.Context, nodeConfig *NodeConfig, writeCertOnly bool
 		f.write(file.Name, file.Contents)
 	}
 	if writeCertOnly {
+		logrus.Infof("writeCertOnly is true....")
 		return nil
 	}
 
 	for name, process := range nodeConfig.Processes {
 		if strings.Contains(name, "sidekick") || strings.Contains(name, "share-mnt") {
+			logrus.Infof("running process for sidekick or share-mnt")
 			// windows dockerfile VOLUME declaration must to satisfy one of them:
 			// 	- a non-existing or empty directory
 			//  - a drive other than C:
@@ -50,6 +54,7 @@ func ExecutePlan(ctx context.Context, nodeConfig *NodeConfig, writeCertOnly bool
 
 	for name, process := range nodeConfig.Processes {
 		if !strings.Contains(name, "sidekick") {
+			logrus.Infof("running process for !sidekick")
 			if err := runProcess(ctx, name, process, true, bundleChanged); err != nil {
 				return err
 			}

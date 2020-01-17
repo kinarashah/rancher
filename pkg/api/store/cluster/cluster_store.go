@@ -218,7 +218,26 @@ func (r *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 		return nil, err
 	}
 
+	setDefaultUpgradeStrategy(data)
+
 	return r.Store.Create(apiContext, schema, data)
+}
+
+func setDefaultUpgradeStrategy(data map[string]interface{}) {
+	rkeConfig := values.GetValueN(data, "rancherKubernetesEngineConfig")
+	if rkeConfig == nil {
+		return
+	}
+	rkeConfig2 := convert.ToMapInterface(rkeConfig)
+	logrus.Infof("upgrade strategy would be always nil for now %v", values.GetValueN(rkeConfig2, "nodeUpgradeStrategy"))
+	rkeConfig2["nodeUpgradeStrategy"] = map[string]map[string]interface{}{
+		"rollingUpdateStrategy": map[string]interface{}{
+			"maxUnavailable": 1,
+		},
+	}
+	values.PutValue(data, rkeConfig2, "rancherKubernetesEngineConfig")
+
+	logrus.Infof("After updating %v", values.GetValueN(data, "rancherKubernetesEngineConfig"))
 }
 
 func transposeNameFields(data map[string]interface{}, clusterConfigSchema *types.Schema) map[string]interface{} {
@@ -476,6 +495,8 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 	if err := validateNetworkFlag(data, false); err != nil {
 		return nil, httperror.NewFieldAPIError(httperror.InvalidOption, "enableNetworkPolicy", err.Error())
 	}
+
+	setDefaultUpgradeStrategy(data)
 
 	setBackupConfigSecretKeyIfNotExists(existingCluster, data)
 	setPrivateRegistryPasswordIfNotExists(existingCluster, data)

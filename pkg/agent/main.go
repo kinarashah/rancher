@@ -279,7 +279,7 @@ func run() error {
 		}
 
 		go func() {
-			logrus.Infof("Starting plan monitor")
+			logrus.Infof("Starting plan monitor, writeCertsOnly %v", writeCertsOnly)
 			for {
 				select {
 				case <-time.After(2 * time.Minute):

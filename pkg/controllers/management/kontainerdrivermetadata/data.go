@@ -128,7 +128,8 @@ func (md *MetadataController) saveSystemImages(K8sVersionRKESystemImages map[str
 			maxVersionForMajorK8sVersion[majorVersion] = k8sVersion
 		}
 	}
-	logrus.Debugf("driverMetadata deprecated %v max incompatible versions %v", deprecatedMap, maxIgnore)
+	logrus.Infof("driverMetadata deprecated %v max incompatible versions %v", deprecatedMap, maxIgnore)
+	logrus.Infof("rancher version %v", rancherVersion)
 
 	return md.updateSettings(maxVersionForMajorK8sVersion, rancherVersion, ServiceOptions, DefaultK8sVersions, deprecatedMap)
 }
