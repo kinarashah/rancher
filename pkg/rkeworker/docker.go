@@ -32,6 +32,7 @@ type NodeConfig struct {
 	Certs       string                `json:"certs"`
 	Processes   map[string]v3.Process `json:"processes"`
 	Files       []v3.File             `json:"files"`
+	Token       string                `json:"token"`
 }
 
 func runProcess(ctx context.Context, name string, p v3.Process, start, forceRestart bool) error {
@@ -39,6 +40,7 @@ func runProcess(ctx context.Context, name string, p v3.Process, start, forceRest
 	if err != nil {
 		return err
 	}
+	logrus.Infof("runProcess timeout %s", c.HTTPClient().Timeout*time.Second)
 	defer c.Close()
 
 	args := filters.NewArgs()
@@ -90,6 +92,7 @@ func runProcess(ctx context.Context, name string, p v3.Process, start, forceRest
 	}
 
 	if len(matchedContainers) > 0 {
+		logrus.Infof("timeout timeout %s", c.HTTPClient().Timeout)
 		inspect, err := c.ContainerInspect(ctx, matchedContainers[0].ID)
 		if err != nil {
 			return err

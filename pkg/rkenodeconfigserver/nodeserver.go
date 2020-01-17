@@ -22,10 +22,10 @@ import (
 	rkehosts "github.com/rancher/rke/hosts"
 	rkepki "github.com/rancher/rke/pki"
 	rkeservices "github.com/rancher/rke/services"
-	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/config"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 )
 
 var (
@@ -40,6 +40,8 @@ type RKENodeConfigServer struct {
 	serviceOptions       v3.RKEK8sServiceOptionInterface
 	sysImagesLister      v3.RKEK8sSystemImageLister
 	sysImages            v3.RKEK8sSystemImageInterface
+	clusters             v3.ClusterInterface
+	nodes                v3.NodeInterface
 }
 
 func Handler(auth *tunnelserver.Authorizer, scaledContext *config.ScaledContext) http.Handler {
@@ -51,6 +53,8 @@ func Handler(auth *tunnelserver.Authorizer, scaledContext *config.ScaledContext)
 		serviceOptions:       scaledContext.Management.RKEK8sServiceOptions(""),
 		sysImagesLister:      scaledContext.Management.RKEK8sSystemImages("").Controller().Lister(),
 		sysImages:            scaledContext.Management.RKEK8sSystemImages(""),
+		clusters:             scaledContext.Management.Clusters(""),
+		nodes:                scaledContext.Management.Nodes(""),
 	}
 }
 
@@ -98,7 +102,21 @@ func (n *RKENodeConfigServer) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 			rw.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}
-		nodeConfig, err = n.nodeConfig(req.Context(), client.Cluster, client.Node)
+		//logrus.Infof("entered here???")
+		cluster := client.Cluster
+		token := req.Header.Get("upgrade_token")
+		if token != "" {
+			logrus.Infof("header for %s: %s, now to clean it up", client.Node.Name, token)
+			cluster, err = n.markUpgraded(client.Cluster, client.Node, token)
+		}
+		//logrus.Infof("entered nodeConfig?")
+		nodeConfig, err = n.nodeConfig(req.Context(), cluster, client.Node)
+
+		if err != nil && err.Error() == "upgraded" {
+			logrus.Infof("will wait to be upgraded %s", client.Node.Status.NodeName)
+			rw.WriteHeader(http.StatusAccepted)
+			return
+		}
 	}
 
 	if err != nil {
@@ -120,6 +138,51 @@ func isNonWorkerOnly(role []string) bool {
 		return true
 	}
 	return false
+}
+
+func (n *RKENodeConfigServer) markUpgraded(cluster *v3.Cluster, node *v3.Node, token string) (*v3.Cluster, error) {
+	nodeMap, ok := cluster.Status.NodeUpgradeStatus.Nodes[token]
+	if !ok {
+		logrus.Infof("server: got to update, why token not present %v", cluster.Status.NodeUpgradeStatus.Nodes)
+		return cluster, nil
+	}
+
+	state, ok := nodeMap[node.Name]
+	if !ok {
+		logrus.Infof("server: no state for this node? %s %s", nodeMap[node.Name], state)
+		return cluster, nil
+	}
+
+	if state != "upgrading" {
+		logrus.Infof("server: state for this node  %s %s", node.Name, state)
+	} else {
+		logrus.Infof("server: marking the state as upgraded! %s %s", node.Name, state)
+
+		nodeCopy := node.DeepCopy()
+		v3.NodeConditionUpdated.True(nodeCopy)
+		v3.NodeConditionUpdated.Reason(nodeCopy, "")
+		v3.NodeConditionUpdated.Message(nodeCopy, "")
+
+		_, err := n.nodes.Update(nodeCopy)
+		if err != nil {
+			logrus.Infof("markUpgraded: couldn't update node to upgraded! %s %v", node.Name, err)
+		}
+
+		logrus.Infof("reaching here?ss")
+		clusterObj := cluster.DeepCopy()
+		clusterObj.Status.NodeUpgradeStatus.Nodes[token][node.Name] = "upgraded"
+
+		upd, err := n.clusters.Update(clusterObj)
+		if err != nil {
+			logrus.Infof("not returning error because we'd update it next time? RETRY? %v", err)
+			return cluster, nil
+		}
+
+		return upd, nil
+
+	}
+	return cluster, nil
+
 }
 
 func (n *RKENodeConfigServer) nonWorkerConfig(ctx context.Context, cluster *v3.Cluster, node *v3.Node) (*rkeworker.NodeConfig, error) {
@@ -169,7 +232,51 @@ func (n *RKENodeConfigServer) nonWorkerConfig(ctx context.Context, cluster *v3.C
 	return nil, fmt.Errorf("failed to find plan for non-worker %s", node.Status.NodeConfig.Address)
 }
 
+func proceed(cluster *v3.Cluster, node *v3.Node) (bool, bool) {
+	nodeUpgradeStatus := cluster.Status.NodeUpgradeStatus
+	if nodeUpgradeStatus == nil {
+		return true, false
+	}
+
+	if len(cluster.Status.NodeUpgradeStatus.Nodes) == 0 {
+		return true, false
+	}
+
+	currHash := cluster.Status.NodeUpgradeStatus.CurrentToken
+
+	//logrus.Infof("currHash for node-name %s is %s", node.Name, currHash)
+
+	nodeMap, ok := nodeUpgradeStatus.Nodes[currHash]
+	if !ok {
+		return false, false
+	}
+
+	state, ok := nodeMap[node.Name]
+	if !ok || state == "draining" {
+		//logrus.Infof("state for nodename %s %s %v", state, node.Name, nodeMap)
+		return false, false
+	}
+
+	if state == "upgraded" || state == "active" {
+		return true, false
+	}
+
+	if state == "upgrading" || state == "drained" {
+		//logrus.Infof("state for nodename %s %s %v", state, node.Name, nodeMap)
+		return true, true
+	}
+
+	logrus.Infof("server reached here why false, %s %v", node.Name, nodeMap)
+	return false, false
+}
+
 func (n *RKENodeConfigServer) nodeConfig(ctx context.Context, cluster *v3.Cluster, node *v3.Node) (*rkeworker.NodeConfig, error) {
+
+	toProceed, sendToken := proceed(cluster, node)
+	if !toProceed {
+		return nil, fmt.Errorf("wait")
+	}
+
 	spec := cluster.Status.AppliedSpec.DeepCopy()
 
 	infos, err := librke.GetDockerInfo(node)
@@ -239,6 +346,47 @@ func (n *RKENodeConfigServer) nodeConfig(ctx context.Context, cluster *v3.Cluste
 			}
 			nc.Certs = certString
 
+			if cluster.Status.NodeUpgradeStatus != nil && cluster.Status.NodeUpgradeStatus.CurrentToken != "" {
+				logrus.Infof("ENTERED HERE %s", node.Name)
+
+				currToken := cluster.Status.NodeUpgradeStatus.CurrentToken
+				if cluster.Status.NodeUpgradeStatus.Nodes[currToken][node.Name] != "upgrading" {
+					clusterObj := cluster.DeepCopy()
+					logrus.Infof("DEEPCOPY %s", node.Name)
+
+					logrus.Infof("map %v token %s", clusterObj.Status.NodeUpgradeStatus.Nodes[currToken], currToken)
+					clusterObj.Status.NodeUpgradeStatus.Nodes[currToken][node.Name] = "upgrading"
+
+					logrus.Infof("updating here %s", node.Name)
+					_, err := n.clusters.Update(clusterObj)
+					if err != nil {
+						logrus.Infof("ENTERED HERE?")
+						logrus.Infof("UPGRADING not sending token because cluster update failed %v", err)
+					}
+				}
+
+				if !v3.NodeConditionUpdated.IsUnknown(node) {
+					logrus.Infof("reached node copy?")
+					nodeCopy := node.DeepCopy()
+					v3.NodeConditionUpdated.Unknown(nodeCopy)
+					v3.NodeConditionUpdated.Message(nodeCopy, "agent upgrading")
+					v3.NodeConditionUpdated.Reason(nodeCopy, "agent upgrading")
+
+					_, err = n.nodes.Update(nodeCopy)
+					if err != nil {
+						logrus.Infof("UPGRADING not sending token because node update failed %v", err)
+					}
+				}
+
+				if sendToken {
+					logrus.Infof("reached cluster token")
+					token := cluster.Status.NodeUpgradeStatus.CurrentToken
+					logrus.Infof("server sending token for %s: currToken %s nodeMap %v", node.Name, token, cluster.Status.NodeUpgradeStatus.Nodes[token])
+					nc.Token = token
+				}
+			}
+
+			logrus.Infof("RETURNING FROM %s", node.Name)
 			return nc, nil
 		}
 	}

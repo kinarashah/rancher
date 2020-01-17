@@ -90,7 +90,7 @@ func (f *Formatter) Formatter(request *types.APIContext, resource *types.RawReso
 	if gkeConfig, ok := resource.Values["googleKubernetesEngineConfig"]; ok {
 		configMap, ok := gkeConfig.(map[string]interface{})
 		if !ok {
-			logrus.Errorf("could not convert gke config to map")
+			//logrus.Errorf("could not convert gke config to map %s %v", resource.ID, resource.Values)
 			return
 		}
 

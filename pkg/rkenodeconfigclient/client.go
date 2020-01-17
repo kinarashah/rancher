@@ -43,6 +43,13 @@ func newErrNodeOrClusterNotFound(msg, occursType string) *ErrNodeOrClusterNotFou
 	}
 }
 
+type ErrClusterUpgrading struct {
+}
+
+func (e *ErrClusterUpgrading) Error() string {
+	return "cluster upgrading on rolling update, waiting for other nodes to be done"
+}
+
 func ConfigClient(ctx context.Context, url string, header http.Header, writeCertOnly bool) error {
 	// try a few more times because there is a delay after registering a new node
 	nodeOrClusterNotFoundRetryLimit := 3
@@ -58,6 +65,10 @@ func ConfigClient(ctx context.Context, url string, header http.Header, writeCert
 				nodeOrClusterNotFoundRetryLimit--
 			}
 
+			if _, ok := err.(*ErrClusterUpgrading); ok {
+				return nil
+			}
+
 			logrus.Warnf("Error while getting agent config: %v", err)
 			time.Sleep(5 * time.Second)
 			continue
@@ -65,6 +76,22 @@ func ConfigClient(ctx context.Context, url string, header http.Header, writeCert
 
 		if nc != nil {
 			logrus.Debugf("Get agent config: %#v", nc)
+			if nc.Token != "" {
+				logrus.Infof("Got token: %s", nc.Token)
+
+				if err := rkeworker.ExecutePlan(ctx, nc, writeCertOnly); err != nil {
+					return fmt.Errorf("error executing plan for node upgrade %v", err)
+				}
+
+				header.Add("upgrade_token", nc.Token)
+				time.Sleep(20 * time.Second)
+				continue
+			} else {
+				if header.Get("upgrade_token") != "" {
+					logrus.Infof("deleting token %s", header.Get("upgrade_token"))
+				}
+			}
+
 			return rkeworker.ExecutePlan(ctx, nc, writeCertOnly)
 		}
 
@@ -87,6 +114,7 @@ func getConfig(client *http.Client, url string, header http.Header) (*rkeworker.
 	if err != nil {
 		return nil, err
 	}
+	//logrus.Infof("client timeout %s", client.Timeout.Seconds())
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusServiceUnavailable {
@@ -95,6 +123,11 @@ func getConfig(client *http.Client, url string, header http.Header) (*rkeworker.
 
 	if resp.StatusCode == http.StatusNotFound {
 		return &rkeworker.NodeConfig{}, nil
+	}
+
+	if resp.StatusCode == http.StatusAccepted {
+		logrus.Infof("received cluster upgrading msg")
+		return nil, &ErrClusterUpgrading{}
 	}
 
 	if resp.StatusCode != http.StatusOK {

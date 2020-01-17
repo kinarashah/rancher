@@ -9,6 +9,10 @@ replace (
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20190404221404-ee5226d43009
 	github.com/prometheus/client_golang => github.com/prometheus/client_golang v0.9.3
+
+	github.com/rancher/rke => github.com/kinarashah/rke v0.1.1-rc1.0.20200102233955-6ae02f7979af
+	github.com/rancher/types => github.com/kinarashah/types v0.0.0-20200102233537-66b492bf0d86
+
 	k8s.io/api => k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
@@ -64,6 +68,7 @@ require (
 	github.com/mattn/go-colorable v0.1.0
 	github.com/mcuadros/go-version v0.0.0-20180611085657-6d5863ca60fa
 	github.com/minio/minio-go v0.0.0-20190523192347-c6c2912aa552
+	github.com/mitchellh/hashstructure v0.0.0-20170609045927-2bca23e0e452
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mrjones/oauth v0.0.0-20180629183705-f4e24b6d100c
 	github.com/pborman/uuid v1.2.0
