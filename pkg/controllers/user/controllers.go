@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 
+	"github.com/rancher/rancher/pkg/controllers/user/testnode"
+
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/rancher/norman/store/crd"
 	"github.com/rancher/norman/types"
@@ -63,6 +65,7 @@ func Register(ctx context.Context, cluster *config.UserContext, clusterRec *mana
 	systemimage.Register(ctx, cluster)
 	endpoints.Register(ctx, cluster)
 	approuter.Register(ctx, cluster)
+	testnode.Register(ctx, cluster)
 	resourcequota.Register(ctx, cluster)
 	globaldns.Register(ctx, cluster)
 	alert.Register(ctx, cluster)
