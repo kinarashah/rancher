@@ -1,4 +1,4 @@
-package rkeworker
+package rkeworkerupgrade
 
 import (
 	"context"
@@ -44,21 +44,21 @@ var (
 	clusterLock    = sync.Mutex{}
 )
 
-func Register(ctx context.Context, mgmt *config.ManagementContext) {
-	//logrus.Infof("registering management upgrade handler for rke worker nodes")
-	//uh := upgradeHandler{
-	//	nodesLister:          mgmt.Management.Nodes("").Controller().Lister(),
-	//	nodes:                mgmt.Management.Nodes(""),
-	//	clusters:             mgmt.Management.Clusters(""),
-	//	clusterLister:        mgmt.Management.Clusters("").Controller().Lister(),
-	//	serviceOptionsLister: mgmt.Management.RKEK8sServiceOptions("").Controller().Lister(),
-	//	serviceOptions:       mgmt.Management.RKEK8sServiceOptions(""),
-	//	sysImagesLister:      mgmt.Management.RKEK8sSystemImages("").Controller().Lister(),
-	//	sysImages:            mgmt.Management.RKEK8sSystemImages(""),
-	//	ctx:                  ctx,
-	//}
-	//
-	//mgmt.Management.Clusters("").Controller().AddHandler(ctx, "rkeworkerupgradehandler", uh.Sync)
+func Register(ctx context.Context, mgmt *config.UserContext) {
+	logrus.Infof("registering management upgrade handler for rke worker nodes")
+	uh := upgradeHandler{
+		nodesLister:          mgmt.Management.Management.Nodes("").Controller().Lister(),
+		nodes:                mgmt.Management.Management.Nodes(""),
+		clusters:             mgmt.Management.Management.Clusters(""),
+		clusterLister:        mgmt.Management.Management.Clusters("").Controller().Lister(),
+		serviceOptionsLister: mgmt.Management.Management.RKEK8sServiceOptions("").Controller().Lister(),
+		serviceOptions:       mgmt.Management.Management.RKEK8sServiceOptions(""),
+		sysImagesLister:      mgmt.Management.Management.RKEK8sSystemImages("").Controller().Lister(),
+		sysImages:            mgmt.Management.Management.RKEK8sSystemImages(""),
+		ctx:                  ctx,
+	}
+
+	mgmt.Management.Management.Clusters("").Controller().AddHandler(ctx, "rkeworkerupgradehandler", uh.Sync)
 
 	clusterMapData = map[string]context.CancelFunc{}
 }
@@ -73,16 +73,7 @@ func (uh *upgradeHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 		return cluster, nil
 	}
 
-	logrus.Infof("received sync for cluster [%s]", cluster.Name)
-
-	nodes, err := uh.nodesLister.List(cluster.Name, labels.Everything())
-	if err != nil {
-		return nil, err
-	}
-
-	nodes, notReady := filterNodes(nodes)
-
-	logrus.Infof("nodes %v notReady %v", len(nodes), notReady)
+	logrus.Infof("new received sync for cluster [%s]", cluster.Name)
 
 	nodeUpgradeStatus := cluster.Status.NodeUpgradeStatus
 
@@ -113,12 +104,12 @@ func (uh *upgradeHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 		logrus.Infof("token changed for cluster [%s] old: %s new: %s", cluster.Name, oldHash, currHash)
 	}
 
-	nodes, err = uh.nodesLister.List(cluster.Name, labels.Everything())
+	nodes, err := uh.nodesLister.List(cluster.Name, labels.Everything())
 	if err != nil {
 		return nil, err
 	}
 
-	nodes, notReady = filterNodes(nodes)
+	nodes, notReady := filterNodes(nodes)
 
 	logrus.Infof("nodes %v notReady %v", len(nodes), notReady)
 
@@ -133,15 +124,10 @@ func (uh *upgradeHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 	}
 
 	var (
-		//errgrp          errgroup.Group
 		upgrading, done int
 	)
 	toProcessMap, toPrepareMap, doneMap := map[string]bool{}, map[string]bool{}, map[string]bool{}
 
-	//nodesQueue := util.GetObjectQueue(nodes)
-	//
-	//for w := 0; w < WorkerThreads; w++ {
-	//	errgrp.Go(func() error {
 	for _, node := range nodes {
 		if v3.NodeConditionUpdated.IsTrue(node) && currHash == v3.NodeConditionUpdated.GetReason(node) {
 			done += 1
@@ -153,22 +139,16 @@ func (uh *upgradeHandler) Sync(key string, cluster *v3.Cluster) (runtime.Object,
 			upgrading += 1
 			continue
 		}
-		if v3.NodeConditionDrained.IsTrue(node) {
+		if v3.NodeConditionDrained.IsTrue(node) || node.Spec.DesiredNodeUnschedulable == "true" || node.Spec.InternalNodeSpec.Unschedulable {
 			upgrading += 1
 			toProcessMap[node.Name] = true
 			continue
 		}
 		toPrepareMap[node.Name] = true
 	}
-	//	return nil
-	//})
-	//}
 
-	//if err := errgrp.Wait(); err != nil {
-	//	logrus.Errorf("error trying error group %v", err)
-	//}
-
-	logrus.Infof("workerNodeInfo for cluster [%s]: maxAllowed %v upgrading %v toProcess %v", cluster.Name, maxAllowed, upgrading, toProcessMap)
+	logrus.Infof("workerNodeInfo for cluster [%s]: maxAllowed %v upgrading %v doneMap %v toProcess %v",
+		cluster.Name, maxAllowed, upgrading, doneMap, toProcessMap)
 
 	/*
 		toPrepareMap: nodes to drain/cordon
@@ -378,11 +358,17 @@ func (uh *upgradeHandler) syncNodeStatus(cluster *v3.Cluster, currHash string, m
 		}
 	}
 
+	upgrading := len(clusterMap)
+
 	for name := range toProcessMap {
+		if upgrading == maxAllowed {
+			break
+		}
 		clusterMap[name] = "updating"
+		upgrading += 1
 	}
 
-	upgrading := len(clusterMap)
+	logrus.Infof("before ToPrepare %v upgrading %v", clusterMap, len(clusterMap))
 
 	for name := range toPrepareMap {
 		if upgrading == maxAllowed {
@@ -411,7 +397,7 @@ func (uh *upgradeHandler) syncNodeStatus(cluster *v3.Cluster, currHash string, m
 func (uh *upgradeHandler) getClusterHash(cluster *v3.Cluster) (string, error) {
 	// check for node OS, if windowsPreferredCluster, we should also check for windows, else just empty would get default values
 
-	return "upgr105", nil
+	return "upgr210", nil
 	osType := ""
 	svcOptions, err := uh.getServiceOptions(cluster.Spec.RancherKubernetesEngineConfig.Version, osType)
 	if err != nil {

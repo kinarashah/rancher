@@ -3,8 +3,6 @@ package management
 import (
 	"context"
 
-	"github.com/rancher/rancher/pkg/controllers/management/rkeworker"
-
 	"github.com/rancher/rancher/pkg/clustermanager"
 	"github.com/rancher/rancher/pkg/controllers/management/auth"
 	"github.com/rancher/rancher/pkg/controllers/management/catalog"
@@ -50,7 +48,7 @@ func Register(ctx context.Context, management *config.ManagementContext, manager
 	kontainerdrivermetadata.Register(ctx, management)
 	nodedriver.Register(ctx, management)
 	nodepool.Register(ctx, management)
-	rkeworker.Register(ctx, management)
+	//rkeworker.Register(ctx, management)
 	cloudcredential.Register(ctx, management)
 	node.Register(ctx, management)
 	podsecuritypolicy.Register(ctx, management)
