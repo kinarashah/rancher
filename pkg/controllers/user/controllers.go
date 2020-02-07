@@ -3,8 +3,7 @@ package user
 import (
 	"context"
 
-	"github.com/rancher/rancher/pkg/controllers/user/testnode"
-
+	"github.com/rancher/rancher/pkg/controllers/user/rkeworker"
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/rancher/norman/store/crd"
 	"github.com/rancher/norman/types"
@@ -61,6 +60,7 @@ func Register(ctx context.Context, cluster *config.UserContext, clusterRec *mana
 	podsecuritypolicy.RegisterNamespace(ctx, cluster)
 	podsecuritypolicy.RegisterServiceAccount(ctx, cluster)
 	podsecuritypolicy.RegisterTemplate(ctx, cluster)
+	rkeworker.Register(ctx, cluster)
 	secret.Register(ctx, cluster)
 	systemimage.Register(ctx, cluster)
 	endpoints.Register(ctx, cluster)

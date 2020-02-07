@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
+
+	rkeworker2 "github.com/rancher/rancher/pkg/controllers/user/rkeworker"
 
 	"github.com/pkg/errors"
 	"github.com/rancher/norman/types/slice"
@@ -22,7 +25,8 @@ import (
 	rkehosts "github.com/rancher/rke/hosts"
 	rkepki "github.com/rancher/rke/pki"
 	rkeservices "github.com/rancher/rke/services"
-	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	rv1 "github.com/rancher/types/apis/core/v1"
+	"github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/config"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -40,6 +44,9 @@ type RKENodeConfigServer struct {
 	serviceOptions       v3.RKEK8sServiceOptionInterface
 	sysImagesLister      v3.RKEK8sSystemImageLister
 	sysImages            v3.RKEK8sSystemImageInterface
+	clusters             v3.ClusterInterface
+	cfgMaps              rv1.ConfigMapInterface
+	nodes                v3.NodeInterface
 }
 
 func Handler(auth *tunnelserver.Authorizer, scaledContext *config.ScaledContext) http.Handler {
@@ -51,6 +58,9 @@ func Handler(auth *tunnelserver.Authorizer, scaledContext *config.ScaledContext)
 		serviceOptions:       scaledContext.Management.RKEK8sServiceOptions(""),
 		sysImagesLister:      scaledContext.Management.RKEK8sSystemImages("").Controller().Lister(),
 		sysImages:            scaledContext.Management.RKEK8sSystemImages(""),
+		clusters:             scaledContext.Management.Clusters(""),
+		cfgMaps:              scaledContext.Core.ConfigMaps(""),
+		nodes:                scaledContext.Management.Nodes(""),
 	}
 }
 
@@ -87,6 +97,31 @@ func (n *RKENodeConfigServer) ServeHTTP(rw http.ResponseWriter, req *http.Reques
 
 	if client.Node.Status.NodeConfig == nil {
 		rw.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+
+	if strings.HasSuffix(req.URL.Path, upgradeStatusEndpoint) {
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			logrus.Errorf("Failed to read upgrade token for node [%s]: [%v]", client.Node.Name, err)
+
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Failed to read upgrade token. Error: " + err.Error()))
+			return
+		}
+		token := string(body)
+		logrus.Infof("nodeserver received upgrade status for node [%s]: %s", client.Node.Name, token)
+		err = n.markUpgraded(client.Cluster.Name, client.Node, token)
+		if err != nil {
+			logrus.Errorf("Failed to update node [%s]: [%v]", client.Node.Name, err)
+
+			rw.WriteHeader(http.StatusInternalServerError)
+			rw.Write([]byte("Failed to update node. Error: " + err.Error()))
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		logrus.Infof("upgrade trying to enqueue in %s", client.Cluster.Name)
+		n.cfgMaps.Controller().Enqueue(client.Cluster.Name, rkeworker2.UpgradeCfgName)
 		return
 	}
 
@@ -167,6 +202,28 @@ func (n *RKENodeConfigServer) nonWorkerConfig(ctx context.Context, cluster *v3.C
 	}
 
 	return nil, fmt.Errorf("failed to find plan for non-worker %s", node.Status.NodeConfig.Address)
+}
+
+func canProceed(cluster *v3.Cluster, node *v3.Node) (bool, string) {
+	//nodeUpgradeStatus := cluster.Status.NodeUpgradeStatus
+	//if nodeUpgradeStatus == nil {
+	//	return true, ""
+	//}
+	//
+	//if nodeUpgradeStatus.CurrentToken == "" {
+	//	return true, ""
+	//}
+
+	if v3.NodeConditionRegistered.IsUnknown(node) {
+		// node registering for the first time
+		return true, ""
+	}
+
+	if v3.NodeConditionUpdated.IsUnknown(node) {
+		return true, v3.NodeConditionUpdated.GetReason(node)
+	}
+
+	return true, ""
 }
 
 func (n *RKENodeConfigServer) nodeConfig(ctx context.Context, cluster *v3.Cluster, node *v3.Node) (*rkeworker.NodeConfig, error) {

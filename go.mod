@@ -73,6 +73,7 @@ require (
 	github.com/prometheus/client_golang v1.1.0
 	github.com/prometheus/client_model v0.0.0-20190129233127-fd36f4220a90
 	github.com/prometheus/common v0.6.0
+	github.com/rancher/client-go v11.0.0+incompatible // indirect
 	github.com/rancher/kontainer-driver-metadata v0.0.0-20200123225253-a5b9f3e0b2df
 	github.com/rancher/kontainer-engine v0.0.4-dev.0.20200123235809-1b6d4a82a415
 	github.com/rancher/machine v0.15.0-rancher25

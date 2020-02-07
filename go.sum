@@ -725,6 +725,8 @@ github.com/quobyte/api v0.1.2/go.mod h1:jL7lIHrmqQ7yh05OJ+eEEdHr0u/kmT1Ff9iHd+4H
 github.com/rackspace/gophercloud v0.0.0-20150408191457-ce0f487f6747/go.mod h1:4bJ1FwuaBZ6dt1VcDX5/O662mwR8GWqS4l68H6hkoYQ=
 github.com/rancher/client-go v1.17.2-rancher.2 h1:2yuAN9frjt2RYlJCfWjtTuh38AnX0ogSv0DRSSAmPjQ=
 github.com/rancher/client-go v1.17.2-rancher.2/go.mod h1:QAzRgsa0C2xl4/eVpeVAZMvikCn8Nm81yqVx3Kk9XYI=
+github.com/rancher/client-go v11.0.0+incompatible h1:5rdFh3KvVYgzrtRzPgjJZBBlGP7D79aGZt2LeJT2Xxo=
+github.com/rancher/client-go v11.0.0+incompatible/go.mod h1:N4rIJ5TXwpEuCvEf9SJLCX2CqgSTIIyCK8zIV34IZhE=
 github.com/rancher/kontainer-driver-metadata v0.0.0-20200123225253-a5b9f3e0b2df h1:khx6WWLoT3+FslYniJWMzFpdCKwnklZRlo+8YtIHLpM=
 github.com/rancher/kontainer-driver-metadata v0.0.0-20200123225253-a5b9f3e0b2df/go.mod h1:MkY6hsQLw3cHrb0V/Fmn4ur2c5PBIpLIe+gvMWoTXGI=
 github.com/rancher/kontainer-engine v0.0.4-dev.0.20200123235809-1b6d4a82a415 h1:01lzETFuWDv5POYCtil4LLFXIv3GfwFmrU6URkDqQI8=
@@ -1077,6 +1079,7 @@ golang.org/x/tools v0.0.0-20190617190820-da514acc4774/go.mod h1:/rFqwRUd4F7ZHNgw
 golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac/go.mod h1:/rFqwRUd4F7ZHNgwSSTFct+R/Kf4OFW1sUzUTQQTgfc=
 golang.org/x/tools v0.0.0-20190909030654-5b82db07426d/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.0.0-20190920225731-5eefd052ad72/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
+golang.org/x/tools v0.0.0-20191029041327-9cc4af7d6b2c h1:IGkKhmfzcztjm6gYkykvu/NiS8kaqbCWAEWWAyf8J5U=
 golang.org/x/tools v0.0.0-20191029041327-9cc4af7d6b2c/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gonum.org/v1/gonum v0.0.0-20190331200053-3d26580ed485/go.mod h1:2ltnJ7xHfj0zHS40VVPYEAAMTa3ZGguvHGBSJeRWqE0=
