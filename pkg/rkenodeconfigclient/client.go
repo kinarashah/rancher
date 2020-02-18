@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/rancher/rancher/pkg/agent/node"
-
 	"github.com/rancher/rancher/pkg/rkeworker"
 	"github.com/sirupsen/logrus"
 )
