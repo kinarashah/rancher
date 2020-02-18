@@ -47,17 +47,50 @@ func (m *nodesSyncer) syncCordonFields(key string, obj *v3.Node) (runtime.Object
 			return nil, err
 		}
 	}
-	nodeCopy := obj.DeepCopy()
-	if !desiredValue {
-		removeDrainCondition(nodeCopy)
+
+	// reset only after Unschedulable reflects correctly
+	if obj.Spec.InternalNodeSpec.Unschedulable == desiredValue {
+		nodeCopy := obj.DeepCopy()
+		nodeCopy.Spec.DesiredNodeUnschedulable = ""
+
+		if !obj.Spec.InternalNodeSpec.Unschedulable {
+			removeDrainCondition(nodeCopy)
+		}
+
+		obj, err = m.machines.Update(nodeCopy)
+	} else {
+		logrus.Infof("cordonNode: not reflecting correctly [%v] desired %v current %v", obj.Name, desiredValue, obj.Spec.InternalNodeSpec.Unschedulable)
+		//m.machines.Controller().Enqueue("", fmt.Sprintf("%s/%s", m.clusterNamespace, obj.Name))
 	}
-	nodeCopy.Spec.DesiredNodeUnschedulable = ""
-	_, err = m.machines.Update(nodeCopy)
-	if err != nil {
-		return nil, err
-	}
-	return nil, nil
+
+	return obj, nil
 }
+
+//func (m *nodesSyncer) resetNode(node *v3.Node) (*v3.Node, error) {
+//	for i := 0; i < 20; i++ {
+//		time.Sleep(2 * time.Second)
+//		node, err := m.machineLister.Get(node.Namespace, node.Name)
+//		if err != nil {
+//			return node, fmt.Errorf("cordonNode: error getting node [%s] in cluster [%s]: %v", node.Name, node.Namespace, err)
+//		}
+//		// reset after Unschedulable reflects correctly
+//		if node.Spec.InternalNodeSpec.Unschedulable == convert.ToBool(node.Spec.DesiredNodeUnschedulable) {
+//			nodeCopy := node.DeepCopy()
+//			nodeCopy.Spec.DesiredNodeUnschedulable = ""
+//			if !node.Spec.InternalNodeSpec.Unschedulable {
+//				removeDrainCondition(nodeCopy)
+//			}
+//			obj, err := m.machines.Update(nodeCopy)
+//			if err != nil {
+//				if !errors.IsConflict(err) {
+//					return node, err
+//				}
+//			}
+//			return obj, err
+//		}
+//	}
+//	return node, fmt.Errorf("cordonNode: ")
+//}
 
 func (d *nodeDrain) drainNode(key string, obj *v3.Node) (runtime.Object, error) {
 	if obj == nil || obj.DeletionTimestamp != nil || obj.Spec.DesiredNodeUnschedulable == "" {

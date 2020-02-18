@@ -123,11 +123,11 @@ func (m *MetadataController) sync(key string, setting *v3.Setting) (runtime.Obje
 
 func (m *MetadataController) refresh() error {
 	if !toSync(m.url) {
-		logrus.Debugf("driverMetadata: skip sync, hash up to date %v", m.url.latestHash)
+		logrus.Infof("driverMetadata: skip sync, hash up to date %v", m.url.latestHash)
 		return nil
 	}
 	if !storeMap(m.url) {
-		logrus.Debugf("driverMetadata: already in progress")
+		logrus.Infof("driverMetadata: already in progress")
 		return nil
 	}
 	defer deleteMap(m.url)
