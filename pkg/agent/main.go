@@ -34,8 +34,7 @@ var (
 )
 
 const (
-	Token  = "X-API-Tunnel-Token"
-	Params = "X-API-Tunnel-Params"
+	Token = "X-API-Tunnel-Token"
 )
 
 func main() {
@@ -163,8 +162,8 @@ func run() error {
 	}
 
 	headers := map[string][]string{
-		Token:  {token},
-		Params: {base64.StdEncoding.EncodeToString(bytes)},
+		Token:                      {token},
+		rkenodeconfigclient.Params: {base64.StdEncoding.EncodeToString(bytes)},
 	}
 
 	serverURL, err := url.Parse(server)
@@ -269,7 +268,8 @@ func run() error {
 	onConnect := func(ctx context.Context) error {
 		connected()
 		connectConfig := fmt.Sprintf("https://%s/v3/connect/config", serverURL.Host)
-		if err := rkenodeconfigclient.ConfigClient(ctx, connectConfig, headers, writeCertsOnly); err != nil {
+		interval, err := rkenodeconfigclient.ConfigClient(ctx, connectConfig, headers, writeCertsOnly)
+		if err != nil {
 			return err
 		}
 
@@ -290,20 +290,7 @@ func run() error {
 			logrus.Warnf("Unable to perform docker cleanup: %v", err)
 		}
 
-		go func() {
-			logrus.Infof("Starting plan monitor")
-			for {
-				select {
-				case <-time.After(2 * time.Minute):
-					err := rkenodeconfigclient.ConfigClient(ctx, connectConfig, headers, writeCertsOnly)
-					if err != nil {
-						logrus.Errorf("failed to check plan: %v", err)
-					}
-				case <-ctx.Done():
-					return
-				}
-			}
-		}()
+		go planMonitor(ctx, connectConfig, headers, writeCertsOnly, interval)
 
 		return nil
 	}
@@ -326,6 +313,26 @@ func run() error {
 			return false
 		}, onConnect)
 		time.Sleep(5 * time.Second)
+	}
+}
+
+func planMonitor(ctx context.Context, connectConfig string, headers http.Header, writeCertsOnly bool, interval int) {
+	logrus.Infof("Starting plan monitor, checking every %v seconds", interval)
+	tt := time.Duration(interval) * time.Second
+	for {
+		select {
+		case <-time.After(tt):
+			receivedInterval, err := rkenodeconfigclient.ConfigClient(ctx, connectConfig, headers, writeCertsOnly)
+			if err != nil {
+				logrus.Errorf("failed to check plan: %v", err)
+			}
+			if receivedInterval != interval {
+				go planMonitor(ctx, connectConfig, headers, writeCertsOnly, receivedInterval)
+				return
+			}
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 
