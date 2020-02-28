@@ -192,6 +192,7 @@ func (r *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 	}
 	// enable local backups for rke clusters by default
 	enableLocalBackup(data)
+	setNodeUpgradeStrategy(data, nil)
 
 	data, err = r.transposeDynamicFieldToGenericConfig(data)
 	if err != nil {
@@ -467,7 +468,7 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 	if err != nil {
 		return nil, err
 	}
-
+	setNodeUpgradeStrategy(data, existingCluster)
 	data, err = r.transposeDynamicFieldToGenericConfig(data)
 	if err != nil {
 		return nil, err
@@ -644,6 +645,45 @@ func validateNetworkFlag(data map[string]interface{}, create bool) error {
 	}
 
 	return nil
+}
+
+func setNodeUpgradeStrategy(newData, oldData map[string]interface{}) {
+	rkeConfig := values.GetValueN(newData, "rancherKubernetesEngineConfig")
+	if rkeConfig != nil {
+		return
+	}
+	rkeConfigMap := convert.ToMapInterface(rkeConfig)
+	upgradeStrategy := rkeConfigMap["nodeUpgradeStrategy"]
+	if upgradeStrategy == nil {
+		upgradeStrategy = &v3.NodeUpgradeStrategy{
+			MaxUnavailableWorker:       "10%",
+			MaxUnavailableControlplane: "1",
+			Drain:                      false,
+		}
+		values.PutValue(newData, upgradeStrategy, "rancherKubernetesEngineConfig", "nodeUpgradeStrategy")
+		return
+	}
+	upgradeStrategyMap := convert.ToMapInterface(upgradeStrategy)
+	drain := convert.ToBool(upgradeStrategyMap["drain"])
+	if !drain {
+		return
+	}
+	nodeDrainInput := upgradeStrategyMap["nodeDrainInput"]
+	if nodeDrainInput != nil {
+		return
+	}
+	oldDrainInput := values.GetValueN(oldData, "rancherKubernetesEngineConfig", "nodeUpgradeStrategy", "nodeDrainInput")
+	if oldDrainInput != nil {
+		nodeDrainInput = oldDrainInput
+	} else {
+		nodeDrainInput = &v3.NodeDrainInput{
+			IgnoreDaemonSets: true,
+			GracePeriod:      -1,
+			Timeout:          60,
+		}
+	}
+	values.PutValue(newData, nodeDrainInput, "rancherKubernetesEngineConfig", "nodeUpgradeStrategy", "nodeDrainInput")
+
 }
 
 func enableLocalBackup(data map[string]interface{}) {

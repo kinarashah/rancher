@@ -105,6 +105,18 @@ func (uh *upgradeHandler) Sync(key string, node *v3.Node) (runtime.Object, error
 	}
 
 	if v3.ClusterConditionUpgraded.IsUnknown(cluster) {
+		// sync could be for a just updated node, do nothing
+
+		if preparingNode(node) {
+			logrus.Infof("returning because node is preparing %s", node.Name)
+			return node, nil
+		}
+
+		if preparedNode(node) && node.Status.NodePlan.Version == cluster.Status.NodeVersion {
+			logrus.Infof("returning because node is prepared, and versions march %s %v %v", node.Name, node.Status.NodePlan.Version)
+			return node, nil
+		}
+
 		logrus.Infof("cluster [%s] upgrade is in progress, call upgrade to reconcile", cluster.Name)
 		if err := uh.upgradeCluster(cluster, node.Name); err != nil {
 			return nil, err
@@ -112,42 +124,40 @@ func (uh *upgradeHandler) Sync(key string, node *v3.Node) (runtime.Object, error
 		return node, nil
 	}
 
-	// check for upgrade if mismatch between node and cluster's versions
-	toCheck := node.Status.AppliedNodeVersion != 0 && cluster.Status.NodeVersion != node.Status.AppliedNodeVersion
-	if toCheck {
-		logrus.Infof("toCheck %s is true node %v cluster %v", node.Name, node.Status.AppliedNodeVersion, cluster.Status.NodeVersion)
-		nodePlan, err := uh.getNodePlan(node, cluster)
-		if err != nil {
-			return nil, err
-		}
+	// proceed only if node and cluster's versions mismatch
+	if cluster.Status.NodeVersion == node.Status.AppliedNodeVersion {
+		return node, nil
+	}
 
+	nodePlan, err := uh.getNodePlan(node, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	if node.Status.AppliedNodeVersion == 0 {
+		// node never received appliedNodeVersion
+		if planChangedForUpgrade(nodePlan, node.Status.NodePlan.Plan) || planChangedForUpdate(nodePlan, node.Status.NodePlan.Plan) {
+			return uh.updateNodePlan(node, cluster)
+		}
+	} else {
 		if planChangedForUpgrade(nodePlan, node.Status.NodePlan.Plan) {
 			logrus.Infof("plan [%s] changed for upgrade, call upgrade to reconcile cluster [%s]", node.Name, cluster.Name)
 			if err := uh.upgradeCluster(cluster, node.Name); err != nil {
 				return nil, err
 			}
 			return node, nil
-		} else if planChangedForUpdate(nodePlan, node.Status.NodePlan.Plan) {
+		}
+		if planChangedForUpdate(nodePlan, node.Status.NodePlan.Plan) {
 			logrus.Infof("plan [%s] changed for update", node.Name)
 			return uh.updateNodePlan(node, cluster)
-		} else {
-			logrus.Infof("plan [%s] hasn't changed, syncing version nodePlan %v cluster %v", node.Name,
-				node.Status.NodePlan.Version, cluster.Status.NodeVersion)
-			return uh.updateNodePlanVersion(node, cluster)
 		}
 	}
 
-	if node.Status.AppliedNodeVersion == 0 && workerOnly(node.Status.NodeConfig.Role) {
-		nodePlan, err := uh.getNodePlan(node, cluster)
-		if err != nil {
-			return nil, err
-		}
-		if planChangedForUpgrade(nodePlan, node.Status.NodePlan.Plan) || planChangedForUpdate(nodePlan, node.Status.NodePlan.Plan) {
-			return uh.updateNodePlan(node, cluster)
-		}
-		logrus.Infof("waiting for [%s] node-agent to sync, updating nodePlan version %v cluster %v", node.Name, node.Status.NodePlan.Version, cluster.Status.NodeVersion)
-		return uh.updateNodePlanVersion(node, cluster)
-	}
+	//if node.Status.NodePlan.Version != cluster.Status.NodeVersion {
+	//	logrus.Infof("plan [%s] hasn't changed, syncing version nodePlan %v cluster %v", node.Name,
+	//		node.Status.NodePlan.Version, cluster.Status.NodeVersion)
+	//	return uh.updateNodePlanVersion(node, cluster)
+	//}
 
 	return node, nil
 }
@@ -182,10 +192,6 @@ func (uh *upgradeHandler) updateNodePlan(node *v3.Node, cluster *v3.Cluster) (*v
 }
 
 func (uh *upgradeHandler) updateNodePlanVersion(node *v3.Node, cluster *v3.Cluster) (*v3.Node, error) {
-	if node.Status.NodePlan.Version == cluster.Status.NodeVersion {
-		return node, nil
-	}
-
 	nodeCopy := node.DeepCopy()
 	nodeCopy.Status.NodePlan.Version = cluster.Status.NodeVersion
 	logrus.Infof("updating node [%s] with plan version %v", node.Name, nodeCopy.Status.NodePlan.Version)
@@ -235,7 +241,7 @@ func (uh *upgradeHandler) upgradeCluster(cluster *v3.Cluster, nodeName string) e
 
 	lock(clusterName)
 	defer unlock(clusterName)
-	logrus.Debugf("upgradeCluster: processing upgrade for [%s]", nodeName)
+	logrus.Infof("upgradeCluster: processing upgrade for [%s]", nodeName)
 
 	if !v3.ClusterConditionUpgraded.IsUnknown(cluster) {
 		clusterCopy := cluster.DeepCopy()
@@ -476,13 +482,13 @@ func filterNodes(nodes []*v3.Node, expectedVersion int) (map[string]*v3.Node, ma
 			continue
 		}
 
-		if node.Spec.DesiredNodeUnschedulable == "drain" || node.Spec.DesiredNodeUnschedulable == "true" {
+		if preparingNode(node) {
 			// draining or cordoning
 			upgrading++
 			continue
 		}
 
-		if v3.NodeConditionDrained.IsTrue(node) || v3.NodeConditionUpgraded.IsUnknown(node) || node.Spec.InternalNodeSpec.Unschedulable {
+		if preparedNode(node) {
 			// node ready to upgrade
 			upgrading++
 			toProcessMap[node.Name] = node
@@ -493,6 +499,14 @@ func filterNodes(nodes []*v3.Node, expectedVersion int) (map[string]*v3.Node, ma
 	}
 
 	return toPrepareMap, toProcessMap, doneMap, notReadyMap, filtered, upgrading, done
+}
+
+func preparingNode(node *v3.Node) bool {
+	return node.Spec.DesiredNodeUnschedulable == "drain" || node.Spec.DesiredNodeUnschedulable == "true"
+}
+
+func preparedNode(node *v3.Node) bool {
+	return v3.NodeConditionDrained.IsTrue(node) || v3.NodeConditionUpgraded.IsUnknown(node) || node.Spec.InternalNodeSpec.Unschedulable
 }
 
 func workerOnly(roles []string) bool {
