@@ -1,0 +1,162 @@
+package rkeworkerupgrader
+
+import (
+	"fmt"
+
+	"github.com/rancher/norman/types/slice"
+	nodehelper "github.com/rancher/rancher/pkg/node"
+	nodeserver "github.com/rancher/rancher/pkg/rkenodeconfigserver"
+	rkeservices "github.com/rancher/rke/services"
+	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+	"github.com/sirupsen/logrus"
+)
+
+func (uh *upgradeHandler) prepareNode(node *v3.Node, toDrain bool, nodeDrainInput *v3.NodeDrainInput) error {
+	var nodeCopy *v3.Node
+	if toDrain {
+		if node.Spec.DesiredNodeUnschedulable == "drain" {
+			return nil
+		}
+		nodeCopy = node.DeepCopy()
+		nodeCopy.Spec.DesiredNodeUnschedulable = "drain"
+		nodeCopy.Spec.NodeDrainInput = nodeDrainInput
+	} else {
+		if node.Spec.DesiredNodeUnschedulable == "true" || node.Spec.InternalNodeSpec.Unschedulable {
+			return nil
+		}
+		nodeCopy = node.DeepCopy()
+		nodeCopy.Spec.DesiredNodeUnschedulable = "true"
+	}
+
+	if _, err := uh.nodes.Update(nodeCopy); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uh *upgradeHandler) processNode(node *v3.Node, cluster *v3.Cluster, msg string) error {
+	nodePlan, err := uh.getNodePlan(node, cluster)
+	if err != nil {
+		return fmt.Errorf("setNodePlan: error getting node plan for [%s]: %v", node.Name, err)
+	}
+
+	nodeCopy := node.DeepCopy()
+	nodeCopy.Status.NodePlan.Plan = nodePlan
+	nodeCopy.Status.NodePlan.Version = cluster.Status.NodeVersion
+	nodeCopy.Status.NodePlan.AgentCheckInterval = nodeserver.AgentCheckIntervalDuringUpgrade
+
+	v3.NodeConditionUpgraded.Unknown(nodeCopy)
+	v3.NodeConditionUpgraded.Message(nodeCopy, msg)
+
+	if _, err := uh.nodes.Update(nodeCopy); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uh *upgradeHandler) updateNodeActive(node *v3.Node) error {
+	nodeCopy := node.DeepCopy()
+	v3.NodeConditionUpgraded.True(nodeCopy)
+	v3.NodeConditionUpgraded.Message(nodeCopy, "")
+
+	// reset the node
+	nodeCopy.Spec.DesiredNodeUnschedulable = "false"
+	nodeCopy.Status.NodePlan.AgentCheckInterval = nodeserver.DefaultAgentCheckInterval
+
+	if _, err := uh.nodes.Update(nodeCopy); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (uh *upgradeHandler) filterNodes(nodes []*v3.Node, expectedVersion int) (map[string]*v3.Node, map[string]*v3.Node, map[string]*v3.Node, map[string]*v3.Node, int, int, int) {
+	done, upgrading, filtered := 0, 0, 0
+	toPrepareMap, toProcessMap, upgradedMap, notReadyMap := map[string]*v3.Node{}, map[string]*v3.Node{}, map[string]*v3.Node{}, map[string]*v3.Node{}
+
+	for _, node := range nodes {
+		if node.DeletionTimestamp != nil || node.Status.NodeConfig == nil || !workerOnly(node.Status.NodeConfig.Role) {
+			continue
+		}
+
+		// skip nodes marked for ignore by user
+		if node.Labels != nil && node.Labels[ignoreKey] == ignoreValue {
+			continue
+		}
+
+		// skip provisioning nodes
+		if !v3.NodeConditionProvisioned.IsTrue(node) || !v3.NodeConditionRegistered.IsTrue(node) {
+			continue
+		}
+
+		filtered++
+
+		// check for nodeConditionReady
+		if !nodehelper.IsMachineReady(node) {
+			notReadyMap[node.Name] = node
+			logrus.Debugf("node [%s] is not ready", node.Name)
+			continue
+		}
+
+		if node.Status.AppliedNodeVersion == expectedVersion {
+			if v3.NodeConditionUpgraded.IsTrue(node) && !node.Spec.InternalNodeSpec.Unschedulable {
+				done++
+			} else {
+				// node hasn't un-cordoned, so consider it upgrading in terms of maxUnavailable count
+				upgrading++
+				upgradedMap[node.Name] = node
+			}
+			continue
+		}
+
+		if preparingNode(node) {
+			// draining or cordoning
+			upgrading++
+			continue
+		}
+
+		if preparedNode(node) {
+			// node ready to upgrade
+			upgrading++
+			toProcessMap[node.Name] = node
+			continue
+		}
+
+		toPrepareMap[node.Name] = node
+	}
+
+	return toPrepareMap, toProcessMap, upgradedMap, notReadyMap, filtered, upgrading, done
+}
+
+func preparingNode(node *v3.Node) bool {
+	return node.Spec.DesiredNodeUnschedulable == "drain" || node.Spec.DesiredNodeUnschedulable == "true"
+}
+
+func preparedNode(node *v3.Node) bool {
+	return v3.NodeConditionDrained.IsTrue(node) || node.Spec.InternalNodeSpec.Unschedulable || v3.NodeConditionUpgraded.IsUnknown(node)
+}
+
+func workerOnly(roles []string) bool {
+	worker := false
+	for _, role := range roles {
+		if role == rkeservices.ETCDRole {
+			return false
+		}
+		if role == rkeservices.ControlRole {
+			return false
+		}
+		if role == rkeservices.WorkerRole {
+			worker = true
+		}
+	}
+	return worker
+}
+
+func isNonWorkerOnly(role []string) bool {
+	if slice.ContainsString(role, rkeservices.ETCDRole) ||
+		slice.ContainsString(role, rkeservices.ControlRole) {
+		return true
+	}
+	return false
+}
