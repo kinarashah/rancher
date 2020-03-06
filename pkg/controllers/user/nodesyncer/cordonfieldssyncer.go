@@ -48,6 +48,7 @@ func (m *nodesSyncer) syncCordonFields(key string, obj *v3.Node) (runtime.Object
 		}
 	}
 
+	logrus.Debugf("cordonNode: [%v] desired %v current %v", obj.Name, desiredValue, obj.Spec.InternalNodeSpec.Unschedulable)
 	// reset only after Unschedulable reflects correctly
 	if obj.Spec.InternalNodeSpec.Unschedulable == desiredValue {
 		nodeCopy := obj.DeepCopy()
@@ -58,8 +59,6 @@ func (m *nodesSyncer) syncCordonFields(key string, obj *v3.Node) (runtime.Object
 		}
 
 		obj, err = m.machines.Update(nodeCopy)
-	} else {
-		logrus.Debugf("cordonNode: [%v] desired %v current %v", obj.Name, desiredValue, obj.Spec.InternalNodeSpec.Unschedulable)
 	}
 
 	return obj, err
