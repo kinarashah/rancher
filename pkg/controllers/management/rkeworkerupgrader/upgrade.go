@@ -233,10 +233,13 @@ func (uh *upgradeHandler) upgradeCluster(cluster *v3.Cluster, nodeName string) e
 
 	toPrepareMap, toProcessMap, upgradedMap, notReadyMap, filtered, upgrading, done := uh.filterNodes(nodes, cluster.Status.NodeVersion)
 
-	maxAllowed, err := getNum(cluster.Spec.RancherKubernetesEngineConfig.UpgradeStrategy.MaxUnavailableWorker, filtered)
+	maxAllowed, err := calculateMaxUnavailable(cluster.Spec.RancherKubernetesEngineConfig.UpgradeStrategy.MaxUnavailableWorker, filtered)
 	if err != nil {
 		return err
 	}
+
+	logrus.Debugf("cluster [%s] worker-upgrade: workerNodeInfo: nodes %v maxAllowed %v upgrading %v notReady %v "+
+		"toProcess %v toPrepare %v done %v", cluster.Name, filtered, maxAllowed, upgrading, len(notReadyMap), keys(toProcessMap), keys(toPrepareMap), keys(upgradedMap))
 
 	if len(notReadyMap) > maxAllowed {
 		return fmt.Errorf("cluster [%s] worker-upgrade: not enough nodes to upgrade: nodes %v notReady %v maxUnavailable %v", clusterName, filtered, keys(notReadyMap), maxAllowed)
@@ -258,9 +261,6 @@ func (uh *upgradeHandler) upgradeCluster(cluster *v3.Cluster, nodeName string) e
 	}
 
 	unavailable := upgrading + len(notReadyMap)
-
-	logrus.Debugf("cluster [%s] worker-upgrade: workerNodeInfo: nodes %v maxAllowed %v unavailable %v upgrading %v notReady %v "+
-		"toProcess %v toPrepare %v done %v", cluster.Name, filtered, maxAllowed, unavailable, upgrading, len(notReadyMap), keys(toProcessMap), keys(toPrepareMap), keys(upgradedMap))
 
 	if unavailable > maxAllowed {
 		return fmt.Errorf("cluster [%s] worker-upgrade: more than allowed nodes upgrading for cluster: unavailable %v maxUnavailable %v", clusterName, unavailable, maxAllowed)
@@ -365,13 +365,13 @@ func (uh *upgradeHandler) toUpgradeCluster(cluster *v3.Cluster) (bool, error) {
 	return false, nil
 }
 
-func getNum(maxUnavailable string, nodes int) (int, error) {
+func calculateMaxUnavailable(maxUnavailable string, nodes int) (int, error) {
 	parsedMax := intstr.Parse(maxUnavailable)
 	maxAllowed, err := intstr.GetValueFromIntOrPercent(&parsedMax, nodes, false)
 	if err != nil {
 		return 0, err
 	}
-	if maxAllowed >= 1 {
+	if maxAllowed > 0 {
 		return maxAllowed, nil
 	}
 	return 1, nil
