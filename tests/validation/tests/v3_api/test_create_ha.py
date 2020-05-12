@@ -7,8 +7,8 @@ from .test_rke_cluster_provisioning import rke_config
 # when installing Rancher into a k3s setup
 RANCHER_HA_KUBECONFIG = os.environ.get("RANCHER_HA_KUBECONFIG")
 RANCHER_HA_HOSTNAME = os.environ.get(
-    "RANCHER_HA_HOSTNAME", RANCHER_HOSTNAME_PREFIX + ".qa.rancher.space")
-resource_prefix = RANCHER_HA_HOSTNAME.split(".qa.rancher.space")[0]
+    "RANCHER_HA_HOSTNAME", RANCHER_HOSTNAME_PREFIX + ".eng.rancher.space")
+resource_prefix = RANCHER_HA_HOSTNAME.split(".eng.rancher.space")[0]
 RANCHER_SERVER_URL = "https://" + RANCHER_HA_HOSTNAME
 
 RANCHER_CHART_VERSION = os.environ.get("RANCHER_CHART_VERSION")
@@ -34,25 +34,22 @@ export_cmd = "export KUBECONFIG=" + kubeconfig_path
 
 
 def test_remove_rancher_ha():
-    assert CATTLE_TEST_URL.endswith(".qa.rancher.space"), \
-        "the CATTLE_TEST_URL need to end with .qa.rancher.space"
-    if not check_if_ok(CATTLE_TEST_URL):
-        print("skip deleting clusters within the setup")
-    else:
-        print("the CATTLE_TEST_URL is accessible")
-        admin_token = get_user_token("admin", ADMIN_PASSWORD)
-        client = get_client_for_token(admin_token)
+    assert CATTLE_TEST_URL.endswith(".eng.rancher.space"), \
+        "the CATTLE_TEST_URL need to end with .eng.rancher.space"
 
-        # delete clusters except the local cluster
-        clusters = client.list_cluster(id_ne="local").data
-        print("deleting the following clusters: {}"
-              .format([cluster.name for cluster in clusters]))
-        for cluster in clusters:
-            print("deleting the following cluster : {}".format(cluster.name))
-            delete_cluster(client, cluster)
+    admin_token = get_user_token("admin", ADMIN_PASSWORD)
+    client = get_client_for_token(admin_token)
+
+    # delete clusters except the local cluster
+    clusters = client.list_cluster(id_ne="local").data
+    print("deleting the following clusters: {}"
+          .format([cluster.name for cluster in clusters]))
+    for cluster in clusters:
+        print("deleting the following cluster : {}".format(cluster.name))
+        delete_cluster(client, cluster)
 
     resource_prefix = \
-        CATTLE_TEST_URL.split(".qa.rancher.space")[0].split("//")[1]
+        CATTLE_TEST_URL.split(".eng.rancher.space")[0].split("//")[1]
     delete_resource_in_AWS_by_prefix(resource_prefix)
 
 
@@ -284,7 +281,8 @@ def install_rancher(type=RANCHER_HA_CERT_OPTION, repo=RANCHER_HELM_REPO,
     if RANCHER_IMAGE_TAG != "" and RANCHER_IMAGE_TAG is not None:
         helm_rancher_cmd = \
             helm_rancher_cmd + \
-            " --set rancherImageTag=" + RANCHER_IMAGE_TAG
+            " --set rancherImageTag=" + RANCHER_IMAGE_TAG + \
+            " --set rancherImage=" + RANCHER_IMAGE
 
     if operation == "install":
         if type == "byo-self-signed":

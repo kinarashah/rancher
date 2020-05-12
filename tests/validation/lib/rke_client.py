@@ -144,4 +144,5 @@ class RKEClient(object):
         except subprocess.CalledProcessError as e:
             output = e.output
             returncode = e.returncode
+        print(output)    
         print(returncode)
