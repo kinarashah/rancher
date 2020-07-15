@@ -433,6 +433,18 @@ github.com/rancher/norman/types/set
 github.com/rancher/norman/types/slice
 github.com/rancher/norman/types/values
 github.com/rancher/norman/urlbuilder
+# github.com/rancher/rancher/pkg/apis v0.0.0-20200715182431-fd3826a1946e
+github.com/rancher/rancher/pkg/apis/cluster.cattle.io
+github.com/rancher/rancher/pkg/apis/cluster.cattle.io/v3
+github.com/rancher/rancher/pkg/apis/management.cattle.io
+github.com/rancher/rancher/pkg/apis/management.cattle.io/v3
+github.com/rancher/rancher/pkg/apis/project.cattle.io
+github.com/rancher/rancher/pkg/apis/project.cattle.io/v3
+# github.com/rancher/rancher/pkg/client v0.0.0-20200715182431-fd3826a1946e
+github.com/rancher/rancher/pkg/client/generated/cluster/v3
+github.com/rancher/rancher/pkg/client/generated/management/v3
+github.com/rancher/rancher/pkg/client/generated/management/v3public
+github.com/rancher/rancher/pkg/client/generated/project/v3
 # github.com/rancher/rdns-server v0.0.0-20180802070304-bf662911db6a
 github.com/rancher/rdns-server/model
 # github.com/rancher/remotedialer v0.2.6-0.20200403185207-c326f2656545
@@ -652,7 +664,7 @@ golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/mod v0.2.0
+# golang.org/x/mod v0.3.0
 golang.org/x/mod/module
 golang.org/x/mod/semver
 # golang.org/x/net v0.0.0-20200625001655-4c5254603344
@@ -697,7 +709,7 @@ golang.org/x/text/unicode/norm
 golang.org/x/text/width
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20200505023115-26f46d2f7ef8
+# golang.org/x/tools v0.0.0-20200710042808-f1c4188a97a1
 golang.org/x/tools/go/ast/astutil
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
@@ -713,6 +725,7 @@ golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/packagesinternal
+golang.org/x/tools/internal/typesinternal
 # golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 golang.org/x/xerrors
 golang.org/x/xerrors/internal

@@ -80,6 +80,8 @@ require (
 	github.com/rancher/lasso v0.0.0-20200515155337-a34e1e26ad91
 	github.com/rancher/machine v0.15.0-rancher25
 	github.com/rancher/norman v0.0.0-20200714195611-b3163ad4ebc4
+	github.com/rancher/rancher/pkg/apis v0.0.0-20200715182431-fd3826a1946e
+	github.com/rancher/rancher/pkg/client v0.0.0-20200715182431-fd3826a1946e
 	github.com/rancher/rdns-server v0.0.0-20180802070304-bf662911db6a
 	github.com/rancher/remotedialer v0.2.6-0.20200403185207-c326f2656545
 	github.com/rancher/rke v1.2.0-rc2.0.20200712062933-4c1d3db2b0c1
