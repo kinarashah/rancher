@@ -79,6 +79,8 @@ func (h *loginHandler) login(actionName string, action *types.Action, request *t
 			return httperror.WrapAPIError(err, httperror.ServerError, "Server error while authenticating")
 		}
 		tokenData["token"] = token.ObjectMeta.Name + ":" + token.Token
+
+		logrus.Infof("bblll %#v", tokenData)
 		request.WriteResponse(http.StatusCreated, tokenData)
 	}
 

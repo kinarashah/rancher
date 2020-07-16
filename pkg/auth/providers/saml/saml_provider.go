@@ -41,6 +41,8 @@ type Provider struct {
 	ctx             context.Context
 	authConfigs     v3.AuthConfigInterface
 	secrets         corev1.SecretInterface
+	configMapLister corev1.ConfigMapLister
+	configMaps      corev1.ConfigMapInterface
 	userMGR         user.Manager
 	tokenMGR        *tokens.Manager
 	serviceProvider *saml.ServiceProvider
@@ -55,14 +57,16 @@ var SamlProviders = make(map[string]*Provider)
 
 func Configure(ctx context.Context, mgmtCtx *config.ScaledContext, userMGR user.Manager, tokenMGR *tokens.Manager, name string) common.AuthProvider {
 	samlp := &Provider{
-		ctx:         ctx,
-		authConfigs: mgmtCtx.Management.AuthConfigs(""),
-		secrets:     mgmtCtx.Core.Secrets(""),
-		userMGR:     userMGR,
-		tokenMGR:    tokenMGR,
-		name:        name,
-		userType:    name + "_user",
-		groupType:   name + "_group",
+		ctx:             ctx,
+		authConfigs:     mgmtCtx.Management.AuthConfigs(""),
+		configMapLister: mgmtCtx.Core.ConfigMaps("").Controller().Lister(),
+		configMaps:      mgmtCtx.Core.ConfigMaps(""),
+		secrets:         mgmtCtx.Core.Secrets(""),
+		userMGR:         userMGR,
+		tokenMGR:        tokenMGR,
+		name:            name,
+		userType:        name + "_user",
+		groupType:       name + "_group",
 	}
 
 	if samlp.hasLdapGroupSearch() {
@@ -111,9 +115,12 @@ func PerformSamlLogin(name string, apiContext *types.APIContext, input interface
 	}
 	finalRedirectURL := login.FinalRedirectURL
 
+	logrus.Infof("SOCKET_ID %s", login.SocketId)
+
 	if provider, ok := SamlProviders[name]; ok {
 		provider.clientState.SetState(apiContext.Response, apiContext.Request, "Rancher_FinalRedirectURL", finalRedirectURL)
 		provider.clientState.SetState(apiContext.Response, apiContext.Request, "Rancher_Action", loginAction)
+		provider.clientState.SetState(apiContext.Response, apiContext.Request, "Rancher_WsToken", login.SocketId)
 		idpRedirectURL, err := provider.HandleSamlLogin(apiContext.Response, apiContext.Request)
 		if err != nil {
 			return err
@@ -122,6 +129,7 @@ func PerformSamlLogin(name string, apiContext *types.APIContext, input interface
 			"idpRedirectUrl": idpRedirectURL,
 			"type":           "samlLoginOutput",
 		}
+		apiContext.WriteResponse(http.StatusOK, data)
 
 		apiContext.WriteResponse(http.StatusOK, data)
 		return nil

@@ -15,6 +15,7 @@ type GenericLogin struct {
 	TTLMillis    int64  `json:"ttl,omitempty"`
 	Description  string `json:"description,omitempty" norman:"type=string,required"`
 	ResponseType string `json:"responseType,omitempty" norman:"type=string,required"` //json or cookie
+	SocketID string `json:"socketId, omitempty" norman:"type=string"`
 }
 
 type BasicLogin struct {
@@ -118,6 +119,7 @@ type OKTAProvider struct {
 
 type SamlLoginInput struct {
 	FinalRedirectURL string `json:"finalRedirectUrl"`
+	SocketId string `json:"socketId"`
 }
 
 type SamlLoginOutput struct {

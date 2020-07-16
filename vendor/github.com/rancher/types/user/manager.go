@@ -10,6 +10,8 @@ type Manager interface {
 	SetPrincipalOnCurrentUser(apiContext *types.APIContext, principal v3.Principal) (*v3.User, error)
 	GetUser(apiContext *types.APIContext) string
 	EnsureToken(tokenName, description, kind, userName string) (string, error)
+	GetToken(clusterName, tokenName, description, kind, userName string) (*v3.Token, error)
+	// NewKubeconfigToken(clusterName, tokenName, description, kind, userName, identifier string) (*v3.Token, error)
 	EnsureClusterToken(clusterName, tokenName, description, kind, userName string) (string, error)
 	EnsureUser(principalName, displayName string) (*v3.User, error)
 	CheckAccess(accessMode string, allowedPrincipalIDs []string, userPrincipalID string, groups []v3.Principal) (bool, error)

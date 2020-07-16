@@ -243,6 +243,92 @@ func (m *userManager) EnsureClusterToken(clusterName, tokenName, description, ki
 	return token.Name + ":" + token.Token, nil
 }
 
+func (m *userManager) newToken(clusterName, tokenName, description, kind, userName string, useExisting bool) (*v3.Token, error) {
+	key, err := randomtoken.Generate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token key")
+	}
+
+	token := &v3.Token{
+		ObjectMeta: v1.ObjectMeta{
+			Name: tokenName,
+			Labels: map[string]string{
+				tokens.UserIDLabel:          userName,
+				tokens.TokenKindLabel:       kind,
+				tokens.TokenIdentifierLabel: key,
+			},
+		},
+		TTLMillis:    tokens.KubeconfigTokenTTL.Milliseconds(),
+		Description:  description,
+		UserID:       userName,
+		AuthProvider: "local",
+		IsDerived:    true,
+		Token:        key,
+		ClusterName:  clusterName,
+	}
+
+	logrus.Infof("Creating token for user %v", userName)
+	createdToken, err := m.tokens.Create(token)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+		if !useExisting {
+			return nil, err
+		}
+		token, err = m.tokens.Get(tokenName, v1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		token = createdToken
+	}
+
+	return token, nil
+}
+
+func (m *userManager) GetToken(clusterName, tokenName, description, kind, userName string) (*v3.Token, error) {
+	if strings.HasPrefix(tokenName, "token-") {
+		return nil, errors.New("token names can't start with token-")
+	}
+
+	token, err := m.tokenLister.Get("", tokenName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	if token == nil {
+		logrus.Infof("token nil, calling newToken")
+		createdToken, err := m.newToken(clusterName, tokenName, description, kind, userName, true)
+		if err != nil {
+			return nil, err
+		}
+		token = createdToken
+	}
+
+	// delete and create new token if expired
+	if token != nil && tokenUtil.IsExpired(*token) {
+		logrus.Infof("getToken: deleting expired token %s", token.Name)
+		err := m.tokens.Delete(token.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+		logrus.Infof("again generating new one?")
+		token, err = m.newToken(clusterName, tokenName, description, kind, userName, false)
+		if err != nil {
+			logrus.Infof("err here from new create: %v", err)
+			return nil, err
+		}
+	}
+
+	if token.ExpiresAt == "" {
+		tokenUtil.SetTokenExpiresAt(token)
+	}
+
+	logrus.Infof("getToken: token %s expiresAt %s", token.Name, token.ExpiresAt)
+	return token, nil
+}
+
 func (m *userManager) EnsureUser(principalName, displayName string) (*v3.User, error) {
 	var user *v3.User
 	var err error

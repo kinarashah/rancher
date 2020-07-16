@@ -12,6 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rancher/rancher/pkg/cluster"
+	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
+
 	"github.com/crewjam/saml"
 	"github.com/crewjam/saml/samlsp"
 	"github.com/gorilla/mux"
@@ -371,6 +374,28 @@ func (s *Provider) HandleSamlAssertion(w http.ResponseWriter, r *http.Request, a
 	if redirectURL != "" {
 		// delete the cookie
 		s.clientState.DeleteState(w, r, "Rancher_FinalRedirectURL")
+		log.Infof("setting value true!!!")
+
+		tok := s.clientState.GetState(r, "Rancher_WsToken")
+		log.Infof("Rancher_WsToken %s", tok)
+
+		s.clientState.DeleteState(w, r, "Rancher_ConnToken")
+
+		if tok != "" {
+			fmt.Println("channel nil, set configmap")
+
+			data := map[string]string{
+				"wsId":   tok,
+				"userId": user.Name,
+			}
+			err := cluster.SetUser(tok, data, s.configMapLister, s.configMaps)
+			if err != nil {
+				log.Errorf("SAML: error setting Rancher Token %v", err)
+				http.Redirect(w, r, redirectURL+"errorCode=500", http.StatusFound)
+				return
+			}
+		}
+
 		http.Redirect(w, r, redirectURL, http.StatusFound)
 	}
 	return

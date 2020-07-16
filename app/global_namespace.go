@@ -21,6 +21,10 @@ func addCattleGlobalNamespaces(management *config.ManagementContext) error {
 		return err
 	}
 
+	//if err := createNamespace(namespace.GlobalStatusNamespace, management); err != nil {
+	//	return err
+	//}
+
 	logrus.Debugf("calling sync for driver metadata")
 	management.Management.Settings("").Controller().Enqueue("", settings.RkeMetadataConfig.Name)
 
