@@ -2,6 +2,7 @@ package setting
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rancher/norman/api/access"
 	"github.com/rancher/norman/httperror"
@@ -9,6 +10,7 @@ import (
 	"github.com/rancher/norman/types/convert"
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/auth/providerrefresh"
+	"github.com/rancher/rancher/pkg/auth/tokens"
 	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
 	v3client "github.com/rancher/types/client/management/v3"
 )
@@ -77,6 +79,14 @@ func Validator(request *types.APIContext, schema *types.Schema, data map[string]
 		_, err = providerrefresh.ParseMaxAge(newValueString)
 	case "auth-user-info-resync-cron":
 		_, err = providerrefresh.ParseCron(newValueString)
+	case "kubeconfig-token-ttl-minutes":
+		var tokenTTL time.Duration
+		tokenTTL, err = tokens.ParseKubeconfigTokenTTL(newValueString)
+		if err == nil {
+			if tokenTTL.Minutes() > 1440 {
+				return httperror.NewAPIError(httperror.MaxLimitExceeded, fmt.Sprintf("max ttl for kubeconfig tokens is 1440"))
+			}
+		}
 	}
 
 	if err != nil {
