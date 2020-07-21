@@ -13,7 +13,9 @@ import (
 	"github.com/rancher/norman/types"
 	"github.com/rancher/norman/types/slice"
 	"github.com/rancher/rancher/pkg/auth/tokens"
+	tokenUtil "github.com/rancher/rancher/pkg/auth/tokens"
 	"github.com/rancher/rancher/pkg/randomtoken"
+	"github.com/rancher/rancher/pkg/settings"
 	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
 	rbacv1 "github.com/rancher/types/apis/rbac.authorization.k8s.io/v1"
 	"github.com/rancher/types/config"
@@ -21,6 +23,7 @@ import (
 	"github.com/sirupsen/logrus"
 	k8srbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	apitypes "k8s.io/apimachinery/pkg/types"
@@ -241,6 +244,88 @@ func (m *userManager) EnsureClusterToken(clusterName, tokenName, description, ki
 	}
 
 	return token.Name + ":" + token.Token, nil
+}
+
+func (m *userManager) newToken(clusterName, tokenName, description, kind, userName string, useExisting bool) (*v3.Token, error) {
+	key, err := randomtoken.Generate()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token key %v", err)
+	}
+
+	tokenTTL, err := tokens.ParseKubeconfigTokenTTL(settings.KubeconfigTokenTTLMinutes.Get())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse setting [%s]: %v", settings.KubeconfigTokenTTLMinutes.Name, err)
+	}
+
+	token := &v3.Token{
+		ObjectMeta: v1.ObjectMeta{
+			Name: tokenName,
+			Labels: map[string]string{
+				tokens.UserIDLabel:    userName,
+				tokens.TokenKindLabel: kind,
+			},
+		},
+		Description:  description,
+		UserID:       userName,
+		AuthProvider: "local",
+		IsDerived:    true,
+		Token:        key,
+		ClusterName:  clusterName,
+	}
+
+	if tokenTTL.Minutes() > 0 {
+		token.TTLMillis = tokenTTL.Milliseconds()
+	}
+
+	logrus.Infof("Creating token for user %v", userName)
+	createdToken, err := m.tokens.Create(token)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+		if !useExisting {
+			return nil, err
+		}
+		token, err = m.tokens.Get(tokenName, v1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		token = createdToken
+	}
+
+	return token, nil
+}
+
+func (m *userManager) GetToken(clusterName, tokenName, description, kind, userName string) (*v3.Token, error) {
+	token, err := m.tokenLister.Get("", tokenName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return nil, err
+	}
+
+	if token == nil {
+		createdToken, err := m.newToken(clusterName, tokenName, description, kind, userName, true)
+		if err != nil {
+			return nil, err
+		}
+		token = createdToken
+	}
+
+	if token != nil && tokenUtil.IsExpired(*token) {
+		logrus.Debugf("getToken: deleting expired token %s", token.Name)
+		err := m.tokens.Delete(token.Name, &metav1.DeleteOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+		token, err = m.newToken(clusterName, tokenName, description, kind, userName, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	tokenUtil.SetTokenExpiresAt(token)
+	logrus.Debugf("getToken: token %s expiresAt %s", token.Name, token.ExpiresAt)
+	return token, nil
 }
 
 func (m *userManager) EnsureUser(principalName, displayName string) (*v3.User, error) {

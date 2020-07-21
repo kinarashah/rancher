@@ -37,6 +37,7 @@ var (
 	IngressIPDomain                   = NewSetting("ingress-ip-domain", "xip.io")
 	InstallUUID                       = NewSetting("install-uuid", "")
 	JailerTimeout                     = NewSetting("jailer-timeout", "60")
+	KubeconfigTokenTTLMinutes         = NewSetting("kubeconfig-token-ttl-minutes", "960")
 	KubernetesVersion                 = NewSetting("k8s-version", "")
 	KubernetesVersionToServiceOptions = NewSetting("k8s-version-to-service-options", "")
 	KubernetesVersionToSystemImages   = NewSetting("k8s-version-to-images", "")

@@ -30,12 +30,13 @@ import (
 // TODO Cleanup error logging. If error is being returned, use errors.wrap to return and dont log here
 
 const (
-	userPrincipalIndex = "authn.management.cattle.io/user-principal-index"
-	UserIDLabel        = "authn.management.cattle.io/token-userId"
-	TokenKindLabel     = "authn.management.cattle.io/kind"
-	tokenKeyIndex      = "authn.management.cattle.io/token-key-index"
-	secretNameEnding   = "-secret"
-	secretNamespace    = "cattle-system"
+	userPrincipalIndex     = "authn.management.cattle.io/user-principal-index"
+	UserIDLabel            = "authn.management.cattle.io/token-userId"
+	TokenKindLabel         = "authn.management.cattle.io/kind"
+	tokenKeyIndex          = "authn.management.cattle.io/token-key-index"
+	secretNameEnding       = "-secret"
+	secretNamespace        = "cattle-system"
+	KubeconfigResponseType = "kubeconfig"
 )
 
 var (
@@ -779,4 +780,13 @@ func (m *Manager) TokenStreamTransformer(
 		}
 		return data
 	}), nil
+}
+
+func ParseKubeconfigTokenTTL(ttl string) (time.Duration, error) {
+	durString := fmt.Sprintf("%vm", ttl)
+	dur, err := time.ParseDuration(durString)
+	if err != nil {
+		return 0, fmt.Errorf("Error parsing kubeconfig token ttl: %v", err)
+	}
+	return dur, nil
 }
