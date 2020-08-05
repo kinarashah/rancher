@@ -30,7 +30,7 @@ users:
 {{- if .EndpointEnabled }}
         - --cluster={{.ClusterID}}
 {{- end }}
-      command: ./cli
+      command: rancher
 {{- end }}
 
 contexts:
