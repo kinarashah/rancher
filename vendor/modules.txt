@@ -489,7 +489,7 @@ github.com/rancher/system-upgrade-controller/pkg/apis/upgrade.cattle.io/v1
 github.com/rancher/system-upgrade-controller/pkg/condition
 github.com/rancher/system-upgrade-controller/pkg/generated/clientset/versioned/scheme
 github.com/rancher/system-upgrade-controller/pkg/generated/clientset/versioned/typed/upgrade.cattle.io/v1
-# github.com/rancher/types v0.0.0-20200723224053-ae84b42a4797 => github.com/kinarashah/types v0.0.0-20200730182642-52579a669b3c
+# github.com/rancher/types v0.0.0-20200723224053-ae84b42a4797 => github.com/kinarashah/types v0.0.0-20200804225652-0196014d8507
 github.com/rancher/types/apis/apiregistration.k8s.io/v1
 github.com/rancher/types/apis/apps/v1
 github.com/rancher/types/apis/autoscaling/v2beta2
