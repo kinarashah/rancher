@@ -2,10 +2,12 @@ package cluster
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/rancher/norman/api/access"
 	"github.com/rancher/norman/types"
 	"github.com/rancher/rancher/pkg/kubeconfig"
+	"github.com/rancher/rancher/pkg/settings"
 	mgmtclient "github.com/rancher/types/client/management/v3"
 )
 
@@ -23,8 +25,9 @@ func (a ActionHandler) GenerateKubeconfigActionHandler(actionName string, action
 
 	endpointEnabled := cluster.LocalClusterAuthEndpoint != nil && cluster.LocalClusterAuthEndpoint.Enabled
 
-	if cluster.Name == "local" {
-		// expiring tokens for user clusters, existing logic for local cluster
+	generateToken := strings.EqualFold(settings.KubeconfigGenerateToken.Get(), "true")
+	if generateToken {
+		// generate token and place it in kubeconfig, token doesn't expire
 		if endpointEnabled {
 			token, err = a.getClusterToken(cluster.ID, apiContext)
 		} else {

@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	apitypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -191,6 +192,7 @@ func (m *userManager) CheckAccess(accessMode string, allowedPrincipalIDs []strin
 	return false, errors.Errorf("Unsupported accessMode: %v", accessMode)
 }
 
+// creates tokens with 0 ttl and returns token in 'token.Name:token.Token' format
 func (m *userManager) EnsureToken(tokenName, description, kind, userName string) (string, error) {
 	return m.EnsureClusterToken("", tokenName, description, kind, userName)
 }
@@ -246,15 +248,15 @@ func (m *userManager) EnsureClusterToken(clusterName, tokenName, description, ki
 	return token.Name + ":" + token.Token, nil
 }
 
-func (m *userManager) newToken(clusterName, tokenName, description, kind, userName string, useExisting bool) (*v3.Token, error) {
+func (m *userManager) newToken(clusterName, tokenName, description, kind, userName string, ttl time.Duration, useExisting bool) (*v3.Token, error) {
 	key, err := randomtoken.Generate()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token key %v", err)
 	}
 
-	tokenTTL, err := tokens.ParseKubeconfigTokenTTL(settings.KubeconfigTokenTTLMinutes.Get())
+	tokenTTL, err := tokens.ValidateMaxTTL(ttl)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse setting [%s]: %v", settings.KubeconfigTokenTTLMinutes.Name, err)
+		return nil, fmt.Errorf("failed to validate token ttl %v", err)
 	}
 
 	token := &v3.Token{
@@ -297,14 +299,20 @@ func (m *userManager) newToken(clusterName, tokenName, description, kind, userNa
 	return token, nil
 }
 
-func (m *userManager) GetToken(clusterName, tokenName, description, kind, userName string) (*v3.Token, error) {
+// creates kubeconfig tokens with KubeconfigTokenTTL and regenerates if existing token expired
+func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, kind, userName string) (*v3.Token, error) {
 	token, err := m.tokenLister.Get("", tokenName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	}
 
+	tokenTTL, err := tokens.ParseTokenTTL(settings.KubeconfigTokenTTLMinutes.Get())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse setting [%s]: %v", settings.KubeconfigTokenTTLMinutes.Name, err)
+	}
+
 	if token == nil {
-		createdToken, err := m.newToken(clusterName, tokenName, description, kind, userName, true)
+		createdToken, err := m.newToken(clusterName, tokenName, description, kind, userName, tokenTTL, true)
 		if err != nil {
 			return nil, err
 		}
@@ -317,13 +325,60 @@ func (m *userManager) GetToken(clusterName, tokenName, description, kind, userNa
 		if err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
 		}
-		token, err = m.newToken(clusterName, tokenName, description, kind, userName, false)
+		token, err = m.newToken(clusterName, tokenName, description, kind, userName, tokenTTL, false)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	tokenUtil.SetTokenExpiresAt(token)
+	if token.ExpiresAt != "" {
+		return token, nil
+	}
+
+	// SetTokenExpiresAt requires creationTS, so can only be set post create
+	tokenCopy := token.DeepCopy()
+	tokenUtil.SetTokenExpiresAt(tokenCopy)
+
+	token, err = m.tokens.Update(tokenCopy)
+	if err != nil {
+		if !apierrors.IsConflict(err) {
+			return nil, fmt.Errorf("getToken: updating token [%s] failed [%v]", token.Name, err)
+		}
+
+		backoff := wait.Backoff{
+			Duration: 100 * time.Millisecond,
+			Factor:   1,
+			Jitter:   0,
+			Steps:    7,
+		}
+
+		err = wait.ExponentialBackoff(backoff, func() (bool, error) {
+			token, err = m.tokens.Get(token.Name, v1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+
+			if token.ExpiresAt == "" {
+				tokenCopy := token.DeepCopy()
+				tokenUtil.SetTokenExpiresAt(tokenCopy)
+
+				token, err = m.tokens.Update(tokenCopy)
+				if err != nil {
+					logrus.Debugf("getToken: updating token [%s] failed [%v]", token.Name, err)
+					if apierrors.IsConflict(err) {
+						return false, nil
+					}
+					return false, err
+				}
+			}
+			return true, nil
+		})
+
+		if err != nil {
+			return nil, fmt.Errorf("getToken: retry updating token [%s] failed [%v]", token.Name, err)
+		}
+	}
+
 	logrus.Debugf("getToken: token %s expiresAt %s", token.Name, token.ExpiresAt)
 	return token, nil
 }

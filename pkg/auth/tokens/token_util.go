@@ -115,7 +115,7 @@ func GetKubeConfigToken(userName, responseType string, userMGR user.Manager) (*v
 		name = fmt.Sprintf("kubeconfig-%s.%s", userName, clusterID)
 	}
 
-	token, err := userMGR.GetToken(clusterID, name, "Kubeconfig token", "kubeconfig", userName)
+	token, err := userMGR.GetKubeconfigToken(clusterID, name, "Kubeconfig token", "kubeconfig", userName)
 	if err != nil {
 		return nil, err
 	}
