@@ -12,41 +12,54 @@ import (
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
-	intervalSeconds   int64 = 3600
-	samlTokenInterval       = "@every 0h30m0s"
+	tokenPurgeInterval = "@every 0h30m0s"
 )
 
+type purger struct {
+	tokenLister      v3.TokenLister
+	tokens           v3.TokenInterface
+	samlTokens       v3.SamlTokenInterface
+	samlTokensLister v3.SamlTokenLister
+}
+
 var (
-	t *samlTokenPurger
+	p *purger
 	c = cron.New()
 )
 
 func StartPurgeDaemon(ctx context.Context, mgmt *config.ManagementContext) {
-	p := &purger{
+	p = &purger{
 		tokenLister: mgmt.Management.Tokens("").Controller().Lister(),
 		tokens:      mgmt.Management.Tokens(""),
 	}
 
-	t = &samlTokenPurger{
-		samlTokens:       mgmt.Management.SamlTokens(""),
-		samlTokensLister: mgmt.Management.SamlTokens("").Controller().Lister(),
-	}
-
-	go wait.JitterUntil(p.purge, time.Duration(intervalSeconds)*time.Second, .1, true, ctx.Done())
-
-	t.purgeSamlTokens()
-}
-
-type purger struct {
-	tokenLister v3.TokenLister
-	tokens      v3.TokenInterface
+	p.purge()
 }
 
 func (p *purger) purge() {
+	parsed, err := cron.ParseStandard(tokenPurgeInterval)
+	if err != nil {
+		logrus.Errorf("Error parsing token purge interval [%v]", err)
+		return
+	}
+	c.Stop()
+	c = cron.New()
+
+	if parsed != nil {
+		job := cron.FuncJob(purge)
+		c.Schedule(parsed, job)
+		c.Start()
+	}
+}
+
+func purge() {
+	if p == nil {
+		return
+	}
+
 	allTokens, err := p.tokenLister.List("", labels.Everything())
 	if err != nil {
 		logrus.Errorf("Error listing tokens during purge: %v", err)
@@ -66,45 +79,18 @@ func (p *purger) purge() {
 	if count > 0 {
 		logrus.Infof("Purged %v expired tokens", count)
 	}
-}
 
-// saml tokens store encrypted token for login request from rancher cli
-type samlTokenPurger struct {
-	samlTokens       v3.SamlTokenInterface
-	samlTokensLister v3.SamlTokenLister
-}
-
-func (t *samlTokenPurger) purgeSamlTokens() {
-	parsed, err := cron.ParseStandard(samlTokenInterval)
-	if err != nil {
-		logrus.Errorf("Error parsing saml token cron [%v]", err)
-		return
-	}
-	c.Stop()
-	c = cron.New()
-
-	if parsed != nil {
-		job := cron.FuncJob(purge)
-		c.Schedule(parsed, job)
-		c.Start()
-	}
-}
-
-func purge() {
-	if t == nil {
-		return
-	}
-
-	tokens, err := t.samlTokensLister.List(namespace.GlobalNamespace, labels.Everything())
+	// saml tokens store encrypted token for login request from rancher cli
+	samlTokens, err := p.samlTokensLister.List(namespace.GlobalNamespace, labels.Everything())
 	if err != nil {
 		return
 	}
 
-	var count int
-	for _, token := range tokens {
+	count = 0
+	for _, token := range samlTokens {
 		// avoid delete immediately after creation, login request might be pending
 		if token.CreationTimestamp.Add(15 * time.Minute).Before(time.Now()) {
-			err = t.samlTokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
+			err = p.samlTokens.Delete(token.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil && !clientbase.IsNotFound(err) {
 				logrus.Errorf("Error: while deleting expired token %v: %v", err, token.Name)
 				continue
@@ -113,6 +99,6 @@ func purge() {
 		}
 	}
 	if count > 0 {
-		logrus.Debugf("[SamlTokenPurger] Purged %v saml tokens", count)
+		logrus.Infof("Purged %v saml tokens", count)
 	}
 }
