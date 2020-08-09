@@ -254,10 +254,14 @@ func (m *userManager) newToken(clusterName, tokenName, description, kind, userNa
 		return nil, fmt.Errorf("failed to generate token key %v", err)
 	}
 
+	logrus.Infof("Kinara TokenTTL %v", ttl)
+
 	tokenTTL, err := tokens.ValidateMaxTTL(ttl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate token ttl %v", err)
 	}
+
+	logrus.Infof("Kinara after max ttl %v", tokenTTL)
 
 	token := &v3.Token{
 		ObjectMeta: v1.ObjectMeta{
@@ -310,6 +314,8 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse setting [%s]: %v", settings.KubeconfigTokenTTLMinutes.Name, err)
 	}
+
+	logrus.Infof("Kinara FIRST token TTL %v", tokenTTL)
 
 	if token == nil {
 		createdToken, err := m.newToken(clusterName, tokenName, description, kind, userName, tokenTTL, true)
