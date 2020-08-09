@@ -320,8 +320,8 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 	}
 
 	if token != nil && tokenUtil.IsExpired(*token) {
-		logrus.Debugf("getToken: deleting expired token %s", token.Name)
-		err := m.tokens.Delete(token.Name, &metav1.DeleteOptions{})
+		logrus.Debugf("getToken: deleting expired token %s", tokenName)
+		err := m.tokens.Delete(tokenName, &metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
 		}
@@ -342,7 +342,7 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 	token, err = m.tokens.Update(tokenCopy)
 	if err != nil {
 		if !apierrors.IsConflict(err) {
-			return nil, fmt.Errorf("getToken: updating token [%s] failed [%v]", token.Name, err)
+			return nil, fmt.Errorf("getToken: updating token [%s] failed [%v]", tokenName, err)
 		}
 
 		backoff := wait.Backoff{
@@ -353,7 +353,7 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 		}
 
 		err = wait.ExponentialBackoff(backoff, func() (bool, error) {
-			token, err = m.tokens.Get(token.Name, v1.GetOptions{})
+			token, err = m.tokens.Get(tokenName, v1.GetOptions{})
 			if err != nil {
 				return false, err
 			}
@@ -364,7 +364,7 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 
 				token, err = m.tokens.Update(tokenCopy)
 				if err != nil {
-					logrus.Debugf("getToken: updating token [%s] failed [%v]", token.Name, err)
+					logrus.Debugf("getToken: updating token [%s] failed [%v]", tokenName, err)
 					if apierrors.IsConflict(err) {
 						return false, nil
 					}
@@ -375,7 +375,7 @@ func (m *userManager) GetKubeconfigToken(clusterName, tokenName, description, ki
 		})
 
 		if err != nil {
-			return nil, fmt.Errorf("getToken: retry updating token [%s] failed [%v]", token.Name, err)
+			return nil, fmt.Errorf("getToken: retry updating token [%s] failed [%v]", tokenName, err)
 		}
 	}
 
