@@ -8,15 +8,23 @@ import (
 	"github.com/rancher/rancher/pkg/namespace"
 	v3 "github.com/rancher/types/apis/management.cattle.io/v3"
 	"github.com/rancher/types/config"
-	"github.com/robfig/cron"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const (
-	tokenPurgeInterval = "@every 0h30m0s"
-)
+const intervalSeconds int64 = 3600
+
+func StartPurgeDaemon(ctx context.Context, mgmt *config.ManagementContext) {
+	p := &purger{
+		tokenLister:      mgmt.Management.Tokens("").Controller().Lister(),
+		tokens:           mgmt.Management.Tokens(""),
+		samlTokensLister: mgmt.Management.SamlTokens("").Controller().Lister(),
+		samlTokens:       mgmt.Management.SamlTokens(""),
+	}
+	go wait.JitterUntil(p.purge, time.Duration(intervalSeconds)*time.Second, .1, true, ctx.Done())
+}
 
 type purger struct {
 	tokenLister      v3.TokenLister
@@ -25,41 +33,7 @@ type purger struct {
 	samlTokensLister v3.SamlTokenLister
 }
 
-var (
-	p *purger
-	c = cron.New()
-)
-
-func StartPurgeDaemon(ctx context.Context, mgmt *config.ManagementContext) {
-	p = &purger{
-		tokenLister: mgmt.Management.Tokens("").Controller().Lister(),
-		tokens:      mgmt.Management.Tokens(""),
-	}
-
-	p.purge()
-}
-
 func (p *purger) purge() {
-	parsed, err := cron.ParseStandard(tokenPurgeInterval)
-	if err != nil {
-		logrus.Errorf("Error parsing token purge interval [%v]", err)
-		return
-	}
-	c.Stop()
-	c = cron.New()
-
-	if parsed != nil {
-		job := cron.FuncJob(purge)
-		c.Schedule(parsed, job)
-		c.Start()
-	}
-}
-
-func purge() {
-	if p == nil {
-		return
-	}
-
 	allTokens, err := p.tokenLister.List("", labels.Everything())
 	if err != nil {
 		logrus.Errorf("Error listing tokens during purge: %v", err)
