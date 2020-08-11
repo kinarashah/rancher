@@ -84,7 +84,7 @@ func Validator(request *types.APIContext, schema *types.Schema, data map[string]
 	case "kubeconfig-token-ttl-minutes":
 		generateToken := strings.EqualFold(settings.KubeconfigGenerateToken.Get(), "true")
 		if generateToken {
-			return httperror.NewAPIError(httperror.ActionNotAvailable, fmt.Sprintf("ttl is enabled only if rancher doesn't generate token, "+
+			return httperror.NewAPIError(httperror.ActionNotAvailable, fmt.Sprintf("kubeconfig-token-ttl-minutes can be set only if rancher doesn't generate token, "+
 				"disable kubeconfig-generate-token"))
 		}
 

@@ -56,7 +56,6 @@ def test_kubeconfig_token_ttl(admin_mc, user_mc):
 
     # delete existing kubeconfig token
     kubeconfig_token_name = "kubeconfig-" + admin_mc.user.id
-    print(kubeconfig_token_name)
     token = client.by_id_token(kubeconfig_token_name)
     if token is not None:
         client.delete(token)
