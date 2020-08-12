@@ -64,7 +64,7 @@ def test_kubeconfig_token_ttl(admin_mc, user_mc):
     client.update_by_id_setting(id="kubeconfig-generate-token", value="false")
 
     # update kubeconfig ttl setting for test
-    kubeconfig_ttl_mins = 0.1
+    kubeconfig_ttl_mins = 0.01
     client.update_by_id_setting(
         id="kubeconfig-token-ttl-minutes",
         value=kubeconfig_ttl_mins)
