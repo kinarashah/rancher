@@ -31,6 +31,7 @@ var (
 	ActiveDirectoryProviderResourceName                 = "activedirectoryproviders"
 	AuthConfigResourceName                              = "authconfigs"
 	AuthProviderResourceName                            = "authproviders"
+	AuthTokenResourceName                               = "authtokens"
 	AzureADProviderResourceName                         = "azureadproviders"
 	CatalogResourceName                                 = "catalogs"
 	CatalogTemplateResourceName                         = "catalogtemplates"
@@ -128,6 +129,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&AuthConfigList{},
 		&AuthProvider{},
 		&AuthProviderList{},
+		&AuthToken{},
+		&AuthTokenList{},
 		&AzureADProvider{},
 		&AzureADProviderList{},
 		&Catalog{},

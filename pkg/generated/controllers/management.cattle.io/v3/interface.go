@@ -33,6 +33,7 @@ type Interface interface {
 	ActiveDirectoryProvider() ActiveDirectoryProviderController
 	AuthConfig() AuthConfigController
 	AuthProvider() AuthProviderController
+	AuthToken() AuthTokenController
 	AzureADProvider() AzureADProviderController
 	Catalog() CatalogController
 	CatalogTemplate() CatalogTemplateController
@@ -121,6 +122,9 @@ func (c *version) AuthConfig() AuthConfigController {
 }
 func (c *version) AuthProvider() AuthProviderController {
 	return NewAuthProviderController(schema.GroupVersionKind{Group: "management.cattle.io", Version: "v3", Kind: "AuthProvider"}, "authproviders", false, c.controllerFactory)
+}
+func (c *version) AuthToken() AuthTokenController {
+	return NewAuthTokenController(schema.GroupVersionKind{Group: "management.cattle.io", Version: "v3", Kind: "AuthToken"}, "authtokens", false, c.controllerFactory)
 }
 func (c *version) AzureADProvider() AzureADProviderController {
 	return NewAzureADProviderController(schema.GroupVersionKind{Group: "management.cattle.io", Version: "v3", Kind: "AzureADProvider"}, "azureadproviders", false, c.controllerFactory)
