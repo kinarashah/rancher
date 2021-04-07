@@ -62,6 +62,7 @@ func (p *Provisioner) driverUpdate(cluster *v3.Cluster, spec v32.ClusterSpec) (a
 
 	if spec.RancherKubernetesEngineConfig != nil && cluster.Status.APIEndpoint != "" && cluster.Status.ServiceAccountToken != "" &&
 		reflect.DeepEqual(applied.RancherKubernetesEngineConfig, spec.RancherKubernetesEngineConfig) {
+		logrus.Infof("driverUpdate: cluster's RKEspec is the same as applied RKEspec cluster [%s]", cluster.Name)
 		return cluster.Status.APIEndpoint, cluster.Status.ServiceAccountToken, cluster.Status.CACert, false, nil
 	}
 
@@ -80,6 +81,7 @@ func (p *Provisioner) driverUpdate(cluster *v3.Cluster, spec v32.ClusterSpec) (a
 		return "", "", "", false, err
 	}
 
+	logrus.Infof("driverUpdate called for cluster [%s]", cluster.Name)
 	api, token, cert, err = p.engineService.Update(ctx, cluster.Name, kontainerDriver, spec)
 	return api, token, cert, true, err
 }

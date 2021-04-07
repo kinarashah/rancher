@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/resource"
-	"github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -145,6 +147,11 @@ func (c *clusterController) Lister() ClusterLister {
 		ns:         c.ns,
 		controller: c,
 	}
+}
+
+func (c *clusterController) Enqueue(namespace, name string) {
+	logrus.Infof("entered enqueue!!!!! name %s", name)
+	c.GenericController.Enqueue(namespace, name)
 }
 
 func (c *clusterController) AddHandler(ctx context.Context, name string, handler ClusterHandlerFunc) {

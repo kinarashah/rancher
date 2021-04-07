@@ -22,6 +22,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/lasso/pkg/client"
 	"github.com/rancher/lasso/pkg/controller"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
@@ -155,6 +157,7 @@ func (c *clusterController) OnRemove(ctx context.Context, name string, sync Clus
 }
 
 func (c *clusterController) Enqueue(name string) {
+	logrus.Infof("clusterControllerEnqueue name %s", name)
 	c.controller.Enqueue("", name)
 }
 

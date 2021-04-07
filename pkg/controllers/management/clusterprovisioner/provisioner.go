@@ -132,6 +132,7 @@ func (p *Provisioner) Remove(cluster *v3.Cluster) (runtime.Object, error) {
 }
 
 func (p *Provisioner) Updated(cluster *v3.Cluster) (runtime.Object, error) {
+	logrus.Infof("ProvisionerUpdated cluster [%s]", cluster.Name)
 	if cluster.Spec.EKSConfig != nil {
 		logrus.Debugf("EKS cluster [%s] will be managed by eks-operator-controller, skipping update", cluster.Name)
 		return cluster, nil
@@ -151,6 +152,7 @@ func (p *Provisioner) Updated(cluster *v3.Cluster) (runtime.Object, error) {
 			t, err := time.Parse(time.RFC3339, pieces[1])
 			if err != nil || int(time.Since(t)/time.Second) > 20 {
 				cluster.Annotations[KontainerEngineUpdate] = "updated"
+				logrus.Infof("ProvisionerUpdated cluster annotation updated [%s]", cluster.Name)
 				return p.Clusters.Update(cluster)
 			}
 			// Go routine is already running to update the cluster so wait
@@ -308,6 +310,7 @@ func setVersion(cluster *v3.Cluster) {
 }
 
 func (p *Provisioner) update(cluster *v3.Cluster, create bool) (*v3.Cluster, error) {
+	logrus.Infof("updateFunc cluster [%s] create %v", cluster.Name, create)
 	cluster, err := p.reconcileCluster(cluster, create)
 	if err != nil {
 		return cluster, err
@@ -336,12 +339,14 @@ func (p *Provisioner) update(cluster *v3.Cluster, create bool) (*v3.Cluster, err
 func (p *Provisioner) machineChanged(key string, machine *v3.Node) (runtime.Object, error) {
 	parts := strings.SplitN(key, "/", 2)
 
+	logrus.Infof("machineChanged [%s] enqueueing cluster [%s]", parts[1], parts[0])
 	p.ClusterController.Enqueue("", parts[0])
 
 	return machine, nil
 }
 
 func (p *Provisioner) Create(cluster *v3.Cluster) (runtime.Object, error) {
+	logrus.Infof("ProvisionerCreate cluster [%s]", cluster.Name)
 	if cluster.Spec.EKSConfig != nil {
 		logrus.Debugf("EKS cluster [%s] will be managed by eks-operator-controller, skipping create", cluster.Name)
 		return cluster, nil
@@ -426,6 +431,7 @@ func (p *Provisioner) backoffFailure(cluster *v3.Cluster, spec *apimgmtv3.Cluste
 var errKeyRotationFailed = errors.New("encryption key rotation failed, please restore your cluster from backup")
 
 func (p *Provisioner) reconcileCluster(cluster *v3.Cluster, create bool) (*v3.Cluster, error) {
+	logrus.Infof("reconcileCluster cluster [%s]", cluster.Name)
 	if skipLocalK3sImported(cluster) {
 		return cluster, nil
 	}
@@ -455,6 +461,8 @@ func (p *Provisioner) reconcileCluster(cluster *v3.Cluster, create bool) (*v3.Cl
 		cluster.Status.ServiceAccountToken = serviceAccountToken
 		apimgmtv3.ClusterConditionServiceAccountMigrated.True(cluster)
 
+		logrus.Infof("reconcileCluster cluster [%s] ServiceAccountMigrated", cluster.Name)
+
 		// Update the cluster in k8s
 		cluster, err = p.Clusters.Update(cluster)
 		if err != nil {
@@ -471,8 +479,11 @@ func (p *Provisioner) reconcileCluster(cluster *v3.Cluster, create bool) (*v3.Cl
 
 	spec, err := p.getSpec(cluster)
 	if err != nil || spec == nil {
+		logrus.Infof("reconcileCluster getSpec [%v] err [%v] cluster [%s]", spec, err, cluster.Name)
 		return cluster, err
 	}
+
+	logrus.Infof("reconcileCluster getSpec changed nodes [%v] cluster [%s]", spec)
 
 	if ok, delay := p.backoffFailure(cluster, spec); ok {
 		return cluster, &controller.ForgetError{Err: fmt.Errorf("backing off failure, delay: %v", delay)}
