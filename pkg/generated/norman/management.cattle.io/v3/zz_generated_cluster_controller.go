@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/rancher/norman/controller"
 	"github.com/rancher/norman/objectclient"
 	"github.com/rancher/norman/resource"
-	"github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
+	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -150,8 +152,10 @@ func (c *clusterController) Lister() ClusterLister {
 func (c *clusterController) AddHandler(ctx context.Context, name string, handler ClusterHandlerFunc) {
 	c.GenericController.AddHandler(ctx, name, func(key string, obj interface{}) (interface{}, error) {
 		if obj == nil {
+			logrus.Infof("clusterController handler CREATE key %s", key)
 			return handler(key, nil)
 		} else if v, ok := obj.(*v3.Cluster); ok {
+			logrus.Infof("clusterController handler UPDATE key %s", key)
 			return handler(key, v)
 		} else {
 			return nil, nil
