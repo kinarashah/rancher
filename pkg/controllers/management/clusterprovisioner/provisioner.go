@@ -336,6 +336,7 @@ func (p *Provisioner) update(cluster *v3.Cluster, create bool) (*v3.Cluster, err
 func (p *Provisioner) machineChanged(key string, machine *v3.Node) (runtime.Object, error) {
 	parts := strings.SplitN(key, "/", 2)
 
+	logrus.Infof("ClusterEnqueue Provisioner machineChanged [%s] cluster [%s]", parts[1], parts[0])
 	p.ClusterController.Enqueue("", parts[0])
 
 	return machine, nil
@@ -415,6 +416,7 @@ func (p *Provisioner) backoffFailure(cluster *v3.Cluster, spec *apimgmtv3.Cluste
 	if p.backoff.IsInBackOffSinceUpdate(cluster.Name, time.Now()) {
 		go func() {
 			time.Sleep(p.backoff.Get(cluster.Name))
+			logrus.Infof("ClusterEnqueue Provisioner backoffFailure %s", cluster.Name)
 			p.ClusterController.Enqueue("", cluster.Name)
 		}()
 		return true, p.backoff.Get(cluster.Name)

@@ -234,6 +234,7 @@ func upgradingMessage(concurrency int, nodes []string) string {
 func (h *handler) enqueueOrUpdate(cluster *v3.Cluster, upgradeMessage string) (*v3.Cluster, error) {
 	if v32.ClusterConditionUpgraded.GetMessage(cluster) == upgradeMessage {
 		// update would be no op
+		logrus.Infof("ClusterEnqueue k3sbasedupgrade enqueueOrUpdate cluster [%s] (after 5s)", cluster.Name)
 		h.clusterEnqueueAfter(cluster.Name, time.Second*5) // prevent controller from remaining in this state
 		return cluster, nil
 	}
