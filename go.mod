@@ -7,6 +7,8 @@ replace (
 	github.com/knative/pkg => github.com/rancher/pkg v0.0.0-20190514055449-b30ab9de040e
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20200712062324-13d1f37d2d77
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.0-rc10
+
+	github.com/rancher/lasso => github.com/kinarashah/lasso v0.0.0-20210519220646-3fd0374e967f
 	github.com/rancher/rancher/pkg/apis => ./pkg/apis
 	github.com/rancher/rancher/pkg/client => ./pkg/client
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20190921190940-14da1ac737cc // This is because docker/docker/pkg/archive has a dependency on an old x/sys
@@ -18,7 +20,7 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.20.0
 	k8s.io/apiserver => k8s.io/apiserver v0.20.0
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.20.0
-	k8s.io/client-go => github.com/rancher/client-go v1.20.0-rancher.1
+	k8s.io/client-go => github.com/kinarashah/client-go v0.0.0-20210408051614-98939bc0358c
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.20.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.20.0
 	k8s.io/code-generator => k8s.io/code-generator v0.20.0
@@ -107,7 +109,7 @@ require (
 	github.com/robfig/cron v1.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/kafka-go v0.0.0-20190411192201-218fd49cff39
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/urfave/cli v1.22.2
