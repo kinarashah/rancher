@@ -170,7 +170,9 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 			return cluster, nil
 		}
 
+		logrus.Infof("ClusterEnqueue EKSClusterHandler onClusterChange cluster [%s]", cluster.Name)
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
+
 		if failureMessage == "" {
 			logrus.Infof("waiting for cluster EKS [%s] to finish creating", cluster.Name)
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionProvisioned, "")
@@ -278,7 +280,10 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 					// In this case, the API endpoint is private and rancher is waiting for the import cluster command to be run.
 					cluster, statusErr = e.SetUnknown(cluster, apimgmtv3.ClusterConditionWaiting, "waiting for cluster agent to be deployed")
 					if statusErr == nil {
+
+						logrus.Infof("ClusterEnqueue EKSClusterHandler onClusterChange cluster [%s]", cluster.Name)
 						e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
+
 					}
 					return cluster, statusErr
 				}
@@ -327,7 +332,9 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 			return cluster, err
 		}
 
+		logrus.Infof("ClusterEnqueue EKSClusterHandler onClusterChange cluster [%s]", cluster.Name)
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
+
 		if failureMessage == "" {
 			logrus.Infof("waiting for cluster EKS [%s] to update", cluster.Name)
 			return e.SetUnknown(cluster, apimgmtv3.ClusterConditionUpdated, "")
@@ -345,7 +352,9 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 			logrus.Infof("waiting for cluster create [%s] to start", cluster.Name)
 		}
 
+		logrus.Infof("ClusterEnqueue EKSClusterHandler onClusterChange cluster [%s]", cluster.Name)
 		e.ClusterEnqueueAfter(cluster.Name, enqueueTime)
+
 		if failureMessage == "" {
 			if cluster.Spec.EKSConfig.Imported {
 				cluster, err = e.SetUnknown(cluster, apimgmtv3.ClusterConditionPending, "")

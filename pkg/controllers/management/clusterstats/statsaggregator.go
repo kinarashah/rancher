@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -232,6 +234,7 @@ func callWithTimeout(do func()) {
 
 func (s *StatsAggregator) machineChanged(key string, machine *v3.Node) (runtime.Object, error) {
 	if machine != nil {
+		logrus.Infof("ClusterEnqueue StatsAggregator machineChanged [%s] cluster [%s]", machine.Name, machine.Namespace)
 		s.Clusters.Controller().Enqueue("", machine.Namespace)
 	}
 	return nil, nil
