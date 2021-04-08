@@ -5,6 +5,7 @@ import (
 	corev1 "github.com/rancher/rancher/pkg/generated/norman/core/v1"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/monitoring"
+	"github.com/sirupsen/logrus"
 	k8scorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,7 @@ func (h *clusterMonitoringEnabledHandler) sync(key string, endpoints *k8scorev1.
 	}
 
 	// trigger clusterHandler sync loop
+	logrus.Infof("ClusterEnqueue clusterMonitoringEnabledHandler sync cluster [%s]", h.clusterName)
 	h.cattleClusterController.Enqueue(metav1.NamespaceAll, h.clusterName)
 	return endpoints, nil
 }
@@ -69,6 +71,7 @@ func (h *clusterMonitoringEnabledHandler) syncWindowsNode(key string, node *k8sc
 	}
 	// enqueue to enable windows node exporter
 	if endpoint == nil {
+		logrus.Infof("ClusterEnqueue clusterMonitoringEnabledHandler syncWindowsNode [%s] cluster [%s]", node.Name, h.clusterName)
 		h.cattleClusterController.Enqueue(metav1.NamespaceAll, h.clusterName)
 	}
 
