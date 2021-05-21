@@ -5,10 +5,13 @@ cd $(dirname $0)/..
 
 mkdir -p bin
 
-if [ -e /usr/tmp/k3s-images.txt ]; then
-    images=$(grep -e 'docker.io/rancher/pause' -e 'docker.io/rancher/coredns-coredns' /usr/tmp/k3s-images.txt)
+ENV CATTLE_K3S_VERSION v1.20.6+k3s1
+curl -sLf https://github.com/rancher/k3s/releases/download/${CATTLE_K3S_VERSION}/k3s-images.txt -o ./k3s-images.txt
+
+if [ -e ./k3s-images.txt ]; then
+    images=$(grep -e 'docker.io/rancher/pause' -e 'docker.io/rancher/coredns-coredns' ./k3s-images.txt)
     xargs -n1 docker pull <<< "${images}"
-    docker save -o ./bin/k3s-airgap-images.tar ${images}
+    docker save -o ./k3s-airgap-images.tar ${images}
 else
-    touch bin/k3s-airgap-images.tar
+    touch ./k3s-airgap-images.tar
 fi
