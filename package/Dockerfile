@@ -146,7 +146,6 @@ ENV CATTLE_CLI_URL_DARWIN  https://releases.rancher.com/cli2/${CATTLE_CLI_VERSIO
 ENV CATTLE_CLI_URL_LINUX   https://releases.rancher.com/cli2/${CATTLE_CLI_VERSION}/rancher-linux-amd64-${CATTLE_CLI_VERSION}.tar.gz
 ENV CATTLE_CLI_URL_WINDOWS https://releases.rancher.com/cli2/${CATTLE_CLI_VERSION}/rancher-windows-386-${CATTLE_CLI_VERSION}.zip
 
-ARG VERSION=dev
 ENV CATTLE_SERVER_VERSION ${VERSION}
 COPY entrypoint.sh rancher /usr/bin/
 COPY kustomize.sh /usr/bin/
@@ -157,7 +156,7 @@ RUN chmod +x /usr/bin/kustomize.sh
 
 COPY data.json /var/lib/rancher-data/driver-metadata/
 
-ENV CATTLE_AGENT_IMAGE ${IMAGE_REPO}/rancher-agent:${VERSION}
+ENV CATTLE_AGENT_IMAGE rancher/rancher-agent:v2.5.8
 ENV CATTLE_SERVER_IMAGE ${IMAGE_REPO}/rancher
 ENV ETCD_UNSUPPORTED_ARCH=${ARCH}
 ENV ETCDCTL_API=3
