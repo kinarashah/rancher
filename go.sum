@@ -657,8 +657,8 @@ github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E
 github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
 github.com/kinarashah/client-go v0.0.0-20210524192123-0cfa698128f9 h1:p/D/f7FeCOqK9r+rhoys5Ld0EWGnRCcxnoCpY5C1zZY=
 github.com/kinarashah/client-go v0.0.0-20210524192123-0cfa698128f9/go.mod h1:UTdyXFcu9VZV4qQRKGXCa0KdMX4HTCXClRs4s7yFdDQ=
-github.com/kinarashah/lasso v0.0.0-20210524153201-04ed7325b343 h1:46WG6Gn8oyMAJd2uEvJJ8o29hJMYP2sOxtaqi7UXN9g=
-github.com/kinarashah/lasso v0.0.0-20210524153201-04ed7325b343/go.mod h1:W1j8Lh/VpvCqsZNo1e7uFDrt5Fuo9GI88+J7CP5NKVM=
+github.com/kinarashah/lasso v0.0.0-20210525203825-63a6dc68d50e h1:pNVKM/KYf8JJ2fe3YARypZrTe8S6ET/v03rZSD+h6bk=
+github.com/kinarashah/lasso v0.0.0-20210525203825-63a6dc68d50e/go.mod h1:W1j8Lh/VpvCqsZNo1e7uFDrt5Fuo9GI88+J7CP5NKVM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=

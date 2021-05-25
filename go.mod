@@ -8,7 +8,7 @@ replace (
 	github.com/matryer/moq => github.com/rancher/moq v0.0.0-20200712062324-13d1f37d2d77
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.0-rc10
 
-	github.com/rancher/lasso => github.com/kinarashah/lasso v0.0.0-20210524153201-04ed7325b343
+	github.com/rancher/lasso => github.com/kinarashah/lasso v0.0.0-20210525203825-63a6dc68d50e
 	github.com/rancher/rancher/pkg/apis => ./pkg/apis
 	github.com/rancher/rancher/pkg/client => ./pkg/client
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20190921190940-14da1ac737cc // This is because docker/docker/pkg/archive has a dependency on an old x/sys
