@@ -156,7 +156,7 @@ RUN chmod +x /usr/bin/kustomize.sh
 
 COPY data.json /var/lib/rancher-data/driver-metadata/
 
-ENV CATTLE_AGENT_IMAGE rancher/rancher-agent:v2.5.8-patch1
+ENV CATTLE_AGENT_IMAGE rancher/rancher-agent:v2.5.8
 ENV CATTLE_SERVER_IMAGE ${IMAGE_REPO}/rancher
 ENV ETCD_UNSUPPORTED_ARCH=${ARCH}
 ENV ETCDCTL_API=3
