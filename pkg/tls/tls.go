@@ -135,6 +135,7 @@ func ListenAndServe(ctx context.Context, restConfig *rest.Config, handler http.H
 }
 
 func migrateConfig(ctx context.Context, restConfig *rest.Config, opts *server.ListenOpts) {
+	logrus.Info("Kinara entered migrateConfig!")
 	c, err := dynamic.NewForConfig(restConfig)
 	if err != nil {
 		return
@@ -170,6 +171,7 @@ func migrateConfig(ctx context.Context, restConfig *rest.Config, opts *server.Li
 			opts.TLSListenerConfig.SANs = append(opts.TLSListenerConfig.SANs, k)
 		}
 	}
+	logrus.Infof("Kinara migrateConfig SANs %v", opts.TLSListenerConfig.SANs)
 }
 
 func SetupListener(secrets corev1controllers.SecretController, acmeDomains []string, noCACerts bool) (*server.ListenOpts, error) {
@@ -192,6 +194,7 @@ func SetupListener(secrets corev1controllers.SecretController, acmeDomains []str
 
 	caForAgent = strings.TrimSpace(caForAgent)
 	if settings.CACerts.Get() != caForAgent {
+		logrus.Infof("Kinara Updating CACERTS FOR AGENT!")
 		if err := settings.CACerts.Set(caForAgent); err != nil {
 			return nil, err
 		}
@@ -322,6 +325,7 @@ func filterCN(cns ...string) []string {
 	host := u.Hostname()
 	for _, cn := range cns {
 		if cn == host {
+			logrus.Infof("Kinara FilterCN: []%v", host)
 			return []string{host}
 		}
 	}
