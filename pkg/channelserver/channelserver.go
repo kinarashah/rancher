@@ -21,6 +21,7 @@ import (
 var (
 	configs     map[string]*config.Config
 	configsInit sync.Once
+	action      chan string
 )
 
 func GetURLAndInterval() (string, time.Duration) {
@@ -61,10 +62,19 @@ func (d *DynamicInterval) Wait(ctx context.Context) bool {
 				return true
 			}
 			continue
+		case msg := <-action:
+			if msg == "refresh" {
+				logrus.Infof("getReleaseConfig: reloading config for k3s/rke2")
+				return true
+			}
 		case <-ctx.Done():
 			return false
 		}
 	}
+}
+
+func Refresh() {
+	action <- "refresh"
 }
 
 type DynamicSource struct{}
@@ -109,6 +119,7 @@ func GetReleaseConfigByRuntime(ctx context.Context, runtime string) *config.Conf
 }
 
 func NewHandler(ctx context.Context) http.Handler {
+	action = make(chan string)
 	return server.NewHandler(map[string]*config.Config{
 		"v1-k3s-release":  GetReleaseConfigByRuntime(ctx, "k3s"),
 		"v1-rke2-release": GetReleaseConfigByRuntime(ctx, "rke2"),
