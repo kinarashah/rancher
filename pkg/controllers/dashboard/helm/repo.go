@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"time"
 
 	catalog "github.com/rancher/rancher/pkg/apis/catalog.cattle.io/v1"
@@ -84,10 +85,12 @@ func (r *repoHandler) ClusterRepoDownloadStatusHandler(repo *catalog.ClusterRepo
 		return status, err
 	}
 	if !shouldRefresh(&repo.Spec, &status) {
+		logrus.Infof("clusterRepo doesn't need to refresh!!! %s %s", repo.Name, interval)
 		r.clusterRepos.EnqueueAfter(repo.Name, interval)
 		return status, nil
 	}
 
+	logrus.Infof("calling download for repo %s", repo.Name)
 	return r.download(&repo.Spec, status, &repo.ObjectMeta, metav1.OwnerReference{
 		APIVersion: catalog.SchemeGroupVersion.Group + "/" + catalog.SchemeGroupVersion.Version,
 		Kind:       "ClusterRepo",

@@ -361,6 +361,7 @@ func (m *Manager) isInstalled(namespace, name, version, minVersion string, desir
 		return false, "", nil, err
 	}
 
+	logrus.Infof("releases %#v", releases)
 	desired, err := semver.NewVersion(version)
 	if err != nil {
 		return false, "", nil, err
