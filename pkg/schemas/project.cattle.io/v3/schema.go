@@ -16,7 +16,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	knetworkingv1 "k8s.io/api/networking/v1"
 )
 
 var (
@@ -701,32 +701,44 @@ func addServiceOrDNSRecord(dns bool) types.SchemasInitFunc {
 
 func ingressTypes(schemas *types.Schemas) *types.Schemas {
 	return schemas.
-		AddMapperForType(&Version, v1beta1.HTTPIngressPath{},
+		AddMapperForType(&Version, knetworkingv1.HTTPIngressPath{},
 			&m.Embed{Field: "backend"},
+			&mapper.IngressPath{},
 		).
-		AddMapperForType(&Version, v1beta1.IngressRule{},
+		AddMapperForType(&Version, knetworkingv1.IngressRule{},
 			&m.Embed{Field: "http"},
 		).
-		AddMapperForType(&Version, v1beta1.Ingress{},
+		AddMapperForType(&Version, knetworkingv1.Ingress{},
 			&m.AnnotationField{Field: "description"},
-			&m.Move{From: "backend", To: "defaultBackend"},
 			&m.AnnotationField{Field: "publicEndpoints", List: true},
+			&mapper.IngressBackend{},
 		).
-		AddMapperForType(&Version, v1beta1.IngressTLS{},
+		AddMapperForType(&Version, knetworkingv1.IngressTLS{},
 			&m.Move{From: "secretName", To: "certificateName"},
 		).
-		AddMapperForType(&Version, v1beta1.IngressBackend{},
-			&m.Move{From: "servicePort", To: "targetPort"},
+		AddMapperForType(&Version, knetworkingv1.IngressBackend{},
+			&m.Move{From: "service/port/number", To: "targetPort"},
+			&m.Move{From: "service/name", To: "serviceId"},
+			&m.Drop{Field: "service"},
 		).
-		MustImport(&Version, v1beta1.IngressBackend{}, struct {
+		MustImportAndCustomize(&Version, knetworkingv1.IngressBackend{}, func(schema *types.Schema) {
+			schema.MustCustomizeField("targetPort", func(f types.Field) types.Field {
+				f.Type = "intOrString"
+				f.Nullable = true
+				return f
+			})
+			schema.MustCustomizeField("serviceId", func(f types.Field) types.Field {
+				f.Type = "reference[service]"
+				return f
+			})
+		}, struct {
 			WorkloadIDs string `json:"workloadIds" norman:"type=array[reference[workload]]"`
-			ServiceName string `norman:"type=reference[service]"`
 		}{}).
-		MustImport(&Version, v1beta1.IngressRule{}).
-		MustImport(&Version, v1beta1.IngressTLS{}, struct {
+		MustImport(&Version, knetworkingv1.IngressRule{}).
+		MustImport(&Version, knetworkingv1.IngressTLS{}, struct {
 			SecretName string `norman:"type=reference[certificate]"`
 		}{}).
-		MustImportAndCustomize(&Version, v1beta1.Ingress{}, func(schema *types.Schema) {
+		MustImportAndCustomize(&Version, knetworkingv1.Ingress{}, func(schema *types.Schema) {
 			schema.MustCustomizeField("name", func(f types.Field) types.Field {
 				f.Type = "hostname"
 				f.Required = true
