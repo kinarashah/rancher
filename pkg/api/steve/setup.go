@@ -2,6 +2,7 @@ package steve
 
 import (
 	"context"
+	"github.com/rancher/rancher/pkg/api/steve/nodes"
 
 	"github.com/rancher/rancher/pkg/api/steve/catalog"
 	"github.com/rancher/rancher/pkg/api/steve/clusters"
@@ -19,6 +20,7 @@ func Setup(ctx context.Context, server *steve.Server, config *wrangler.Context) 
 	if err := clusters.Register(ctx, server, config); err != nil {
 		return err
 	}
+	nodes.Register(server)
 	machine.Register(server, config)
 	navlinks.Register(ctx, server)
 	settings.Register(server)
