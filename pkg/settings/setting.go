@@ -49,6 +49,7 @@ var (
 	}
 
 	AgentImage                          = NewSetting("agent-image", "rancher/rancher-agent:v2.7-head")
+	AgentAffinityRules                  = NewSetting("agent-affinity-rules", getAgentAffinityRules())
 	AgentRolloutTimeout                 = NewSetting("agent-rollout-timeout", "300s")
 	AgentRolloutWait                    = NewSetting("agent-rollout-wait", "true")
 	AuthImage                           = NewSetting("auth-image", v32.ToolsSystemImages.AuthSystemImages.KubeAPIAuth)
@@ -377,6 +378,37 @@ func getMetadataConfig() string {
 		return ""
 	}
 	return string(ans)
+}
+
+func getAgentAffinityRules() string {
+	nodeAff := v1.NodeAffinity{}
+	nodeAff.RequiredDuringSchedulingIgnoredDuringExecution = &v1.NodeSelector{NodeSelectorTerms: []v1.NodeSelectorTerm{
+		{
+			MatchExpressions: []v1.NodeSelectorRequirement{
+				{
+					Key:      "beta.kubernetes.io/os",
+					Operator: v1.NodeSelectorOpNotIn,
+					Values:   []string{"windows"},
+				},
+			},
+		},
+	},
+	}
+	affinity := v1.Affinity{NodeAffinity: &nodeAff}
+	ans, err := json.Marshal(affinity)
+	if err != nil {
+		logrus.Errorf("error marshaling default affinity %v", err)
+	}
+	return string(ans)
+
+	toReturn := string(ans)
+
+	var affinitys v1.Affinity
+	_ = json.Unmarshal([]byte(toReturn), &affinitys)
+
+	fmt.Println("HELLOWORLD %#v", affinitys)
+
+	return toReturn
 }
 
 // GetSettingByID returns a setting that is stored with the given id.

@@ -125,6 +125,17 @@ type ClusterSpecBase struct {
 	WindowsPreferedCluster                               bool                                    `json:"windowsPreferedCluster" norman:"noupdate"`
 	LocalClusterAuthEndpoint                             LocalClusterAuthEndpoint                `json:"localClusterAuthEndpoint,omitempty"`
 	ClusterSecrets                                       ClusterSecrets                          `json:"clusterSecrets" norman:"nocreate,noupdate"`
+	AgentDeploymentCustomization                         AgentDeploymentCustomization            `json:"agentDeploymentCustomization,omitempty"`
+}
+
+type AgentDeploymentCustomization struct {
+	// https://github.com/kubernetes/kubernetes/blob/v1.25.7/staging/src/k8s.io/api/core/v1/types.go#L3021
+	AppendTolerations []v1.Toleration
+	// https://github.com/kubernetes/kubernetes/blob/v1.25.7/staging/src/k8s.io/api/core/v1/types.go#L2815
+	OverrideAffinityRules []v1.Affinity
+	// ResourceRequirements is set at container level, cluster-agent has only one container but might need to be a custom type later on?
+	// https://github.com/kubernetes/kubernetes/blob/v1.25.7/staging/src/k8s.io/api/core/v1/types.go#L2281
+	ResourceRequirements v1.ResourceRequirements
 }
 
 type ClusterSpec struct {
