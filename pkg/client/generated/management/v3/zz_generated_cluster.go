@@ -11,6 +11,7 @@ const (
 	ClusterFieldAKSConfig                                            = "aksConfig"
 	ClusterFieldAKSStatus                                            = "aksStatus"
 	ClusterFieldAPIEndpoint                                          = "apiEndpoint"
+	ClusterFieldAgentDeploymentCustomization                         = "agentDeploymentCustomization"
 	ClusterFieldAgentEnvVars                                         = "agentEnvVars"
 	ClusterFieldAgentFeatures                                        = "agentFeatures"
 	ClusterFieldAgentImage                                           = "agentImage"
@@ -94,6 +95,7 @@ type Cluster struct {
 	AKSConfig                                            *AKSClusterConfigSpec          `json:"aksConfig,omitempty" yaml:"aksConfig,omitempty"`
 	AKSStatus                                            *AKSStatus                     `json:"aksStatus,omitempty" yaml:"aksStatus,omitempty"`
 	APIEndpoint                                          string                         `json:"apiEndpoint,omitempty" yaml:"apiEndpoint,omitempty"`
+	AgentDeploymentCustomization                         *AgentDeploymentCustomization  `json:"agentDeploymentCustomization,omitempty" yaml:"agentDeploymentCustomization,omitempty"`
 	AgentEnvVars                                         []EnvVar                       `json:"agentEnvVars,omitempty" yaml:"agentEnvVars,omitempty"`
 	AgentFeatures                                        map[string]bool                `json:"agentFeatures,omitempty" yaml:"agentFeatures,omitempty"`
 	AgentImage                                           string                         `json:"agentImage,omitempty" yaml:"agentImage,omitempty"`

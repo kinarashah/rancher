@@ -3,6 +3,7 @@ package client
 const (
 	ClusterSpecType                                                      = "clusterSpec"
 	ClusterSpecFieldAKSConfig                                            = "aksConfig"
+	ClusterSpecFieldAgentDeploymentCustomization                         = "agentDeploymentCustomization"
 	ClusterSpecFieldAgentEnvVars                                         = "agentEnvVars"
 	ClusterSpecFieldAgentImageOverride                                   = "agentImageOverride"
 	ClusterSpecFieldAmazonElasticContainerServiceConfig                  = "amazonElasticContainerServiceConfig"
@@ -39,6 +40,7 @@ const (
 
 type ClusterSpec struct {
 	AKSConfig                                            *AKSClusterConfigSpec          `json:"aksConfig,omitempty" yaml:"aksConfig,omitempty"`
+	AgentDeploymentCustomization                         *AgentDeploymentCustomization  `json:"agentDeploymentCustomization,omitempty" yaml:"agentDeploymentCustomization,omitempty"`
 	AgentEnvVars                                         []EnvVar                       `json:"agentEnvVars,omitempty" yaml:"agentEnvVars,omitempty"`
 	AgentImageOverride                                   string                         `json:"agentImageOverride,omitempty" yaml:"agentImageOverride,omitempty"`
 	AmazonElasticContainerServiceConfig                  map[string]interface{}         `json:"amazonElasticContainerServiceConfig,omitempty" yaml:"amazonElasticContainerServiceConfig,omitempty"`

@@ -2,6 +2,7 @@ package client
 
 const (
 	ClusterSpecBaseType                                                      = "clusterSpecBase"
+	ClusterSpecBaseFieldAgentDeploymentCustomization                         = "agentDeploymentCustomization"
 	ClusterSpecBaseFieldAgentEnvVars                                         = "agentEnvVars"
 	ClusterSpecBaseFieldAgentImageOverride                                   = "agentImageOverride"
 	ClusterSpecBaseFieldClusterSecrets                                       = "clusterSecrets"
@@ -20,6 +21,7 @@ const (
 )
 
 type ClusterSpecBase struct {
+	AgentDeploymentCustomization                         *AgentDeploymentCustomization  `json:"agentDeploymentCustomization,omitempty" yaml:"agentDeploymentCustomization,omitempty"`
 	AgentEnvVars                                         []EnvVar                       `json:"agentEnvVars,omitempty" yaml:"agentEnvVars,omitempty"`
 	AgentImageOverride                                   string                         `json:"agentImageOverride,omitempty" yaml:"agentImageOverride,omitempty"`
 	ClusterSecrets                                       *ClusterSecrets                `json:"clusterSecrets,omitempty" yaml:"clusterSecrets,omitempty"`
