@@ -1,8 +1,11 @@
 package cluster
 
 import (
+	"encoding/json"
+
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/settings"
+	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -25,7 +28,7 @@ func GetClusterAgentAffinity(cluster *v3.Cluster) *corev1.Affinity {
 		return cluster.Spec.ClusterAgentDeploymentCustomization.OverrideAffinity
 	}
 
-	return settings.GetClusterAgentDefaultAffinity()
+	return unmarshalAffinity(settings.ClusterAgentDefaultAffinity.Get())
 }
 
 // GetClusterAgentResourceRequirements returns resource requirements (cpu, memory) for the cluster agent if it has been
@@ -58,7 +61,7 @@ func GetFleetAgentAffinity(cluster *v3.Cluster) *corev1.Affinity {
 		return cluster.Spec.FleetAgentDeploymentCustomization.OverrideAffinity
 	}
 
-	return settings.GetFleetAgentDefaultAffinity()
+	return unmarshalAffinity(settings.FleetAgentDefaultAffinity.Get())
 }
 
 // GetFleetAgentResourceRequirements returns resource requirements (cpu, memory) for the fleet agent if it has been
@@ -70,4 +73,14 @@ func GetFleetAgentResourceRequirements(cluster *v3.Cluster) *corev1.ResourceRequ
 	}
 
 	return nil
+}
+
+// ummarshalAffinity returns an unmarshalled v1 node affinity object.
+func unmarshalAffinity(affinity string) *corev1.Affinity {
+	var affinityObj corev1.Affinity
+	err := json.Unmarshal([]byte(affinity), &affinityObj)
+	if err != nil {
+		logrus.Errorf("failed to unmarshal node affinity: %s", err)
+	}
+	return &affinityObj
 }

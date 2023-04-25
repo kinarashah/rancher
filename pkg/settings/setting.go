@@ -130,8 +130,8 @@ var (
 	HideLocalCluster                    = NewSetting("hide-local-cluster", "false")
 	MachineProvisionImage               = NewSetting("machine-provision-image", "rancher/machine:v0.15.0-rancher98")
 	SystemFeatureChartRefreshSeconds    = NewSetting("system-feature-chart-refresh-seconds", "900")
-	ClusterAgentDefaultAffinity         = NewSetting("cluster-agent-default-affinity", marshalAffinity(GetClusterAgentDefaultAffinity()))
-	FleetAgentDefaultAffinity           = NewSetting("fleet-agent-default-affinity", marshalAffinity(GetFleetAgentDefaultAffinity()))
+	ClusterAgentDefaultAffinity         = NewSetting("cluster-agent-default-affinity", marshalAffinity(getClusterAgentDefaultAffinity()))
+	FleetAgentDefaultAffinity           = NewSetting("fleet-agent-default-affinity", marshalAffinity(getFleetAgentDefaultAffinity()))
 
 	Rke2DefaultVersion = NewSetting("rke2-default-version", "")
 	K3sDefaultVersion  = NewSetting("k3s-default-version", "")
@@ -239,8 +239,8 @@ var (
 	UIPreferred = NewSetting("ui-preferred", "vue")
 )
 
-func GetClusterAgentDefaultAffinity() *v1.Affinity {
-	// set default to affinity that cluster agent currently uses
+// getClusterAgentDefaultAffinity returns the default node affinity for the cluster agent.
+func getClusterAgentDefaultAffinity() *v1.Affinity {
 	return &v1.Affinity{
 		PodAntiAffinity: &v1.PodAntiAffinity{
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{
@@ -329,8 +329,8 @@ func GetClusterAgentDefaultAffinity() *v1.Affinity {
 	}
 }
 
-func GetFleetAgentDefaultAffinity() *v1.Affinity {
-	// set default to affinity that fleet agent currently uses
+// getFleetAgentDefaultAffinity returns the default node affinity for the fleet agent.
+func getFleetAgentDefaultAffinity() *v1.Affinity {
 	return &v1.Affinity{
 		NodeAffinity: &v1.NodeAffinity{
 			PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{

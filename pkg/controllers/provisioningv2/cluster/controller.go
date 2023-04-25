@@ -190,15 +190,32 @@ func (h *handler) generateProvisioningClusterFromLegacyCluster(cluster *v3.Clust
 	if !h.isLegacyCluster(cluster) || cluster.Spec.FleetWorkspaceName == "" {
 		return nil, status, nil
 	}
-	return []runtime.Object{
-		&v1.Cluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        cluster.Name,
-				Namespace:   cluster.Spec.FleetWorkspaceName,
-				Labels:      yaml.CleanAnnotationsForExport(cluster.Labels),
-				Annotations: yaml.CleanAnnotationsForExport(cluster.Annotations),
-			},
+	provCluster := &v1.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        cluster.Name,
+			Namespace:   cluster.Spec.FleetWorkspaceName,
+			Labels:      yaml.CleanAnnotationsForExport(cluster.Labels),
+			Annotations: yaml.CleanAnnotationsForExport(cluster.Annotations),
 		},
+	}
+
+	if cluster.Spec.ClusterAgentDeploymentCustomization != nil {
+		provCluster.Spec.ClusterAgentDeploymentCustomization = &v1.AgentDeploymentCustomization{
+			AppendTolerations:            cluster.Spec.ClusterAgentDeploymentCustomization.AppendTolerations,
+			OverrideAffinity:             cluster.Spec.ClusterAgentDeploymentCustomization.OverrideAffinity,
+			OverrideResourceRequirements: cluster.Spec.ClusterAgentDeploymentCustomization.OverrideResourceRequirements,
+		}
+	}
+	if cluster.Spec.FleetAgentDeploymentCustomization != nil {
+		provCluster.Spec.FleetAgentDeploymentCustomization = &v1.AgentDeploymentCustomization{
+			AppendTolerations:            cluster.Spec.FleetAgentDeploymentCustomization.AppendTolerations,
+			OverrideAffinity:             cluster.Spec.FleetAgentDeploymentCustomization.OverrideAffinity,
+			OverrideResourceRequirements: cluster.Spec.FleetAgentDeploymentCustomization.OverrideResourceRequirements,
+		}
+	}
+
+	return []runtime.Object{
+		provCluster,
 	}, status, nil
 }
 
