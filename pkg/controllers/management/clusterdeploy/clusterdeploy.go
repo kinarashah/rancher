@@ -252,7 +252,7 @@ func redeployAgent(cluster *apimgmtv3.Cluster, desiredAgent, desiredAuth string,
 		return true
 	}
 
-	logrus.Tracef("clusterDeploy: redeployAgent: returning false for redeployAgent")
+	logrus.Infof("clusterDeploy: redeployAgent: returning false for redeployAgent")
 
 	return false
 }
@@ -286,9 +286,38 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	}
 	logrus.Tracef("clusterDeploy: deployAgent: desiredTaints is [%v] for cluster [%s]", desiredTaints, cluster.Name)
 
+	if cluster.Spec.ClusterAgentDeploymentCustomization == nil {
+
+		testReq := corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU: {},
+			},
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU: {},
+			}}
+
+		cc := apimgmtv3.AgentDeploymentCustomization{}
+		cc.OverrideResourceRequirements = &testReq
+
+		clusterCopy := cluster.DeepCopy()
+		clusterCopy.Spec.ClusterAgentDeploymentCustomization = &cc
+
+		logrus.Infof("Kinara: %+v", clusterCopy.Spec.ClusterAgentDeploymentCustomization)
+
+		cluster, err = cd.clusters.Update(clusterCopy)
+		if err != nil {
+			logrus.Infof("Kinara: err %v", err)
+			return err
+		}
+
+		logrus.Infof("Kinara: NEW %+v", cluster.Spec.ClusterAgentDeploymentCustomization)
+	}
+
 	if !redeployAgent(cluster, desiredAgent, desiredAuth, desiredFeatures, desiredTaints) {
 		return nil
 	}
+
+	//logrus.Infof("Kinara: customization %+v", cluster.Spec.ClusterAgentDeploymentCustomization.OverrideResourceRequirements)
 
 	kubeConfig, tokenName, err := cd.getKubeConfig(cluster)
 	if err != nil {
@@ -387,7 +416,12 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 
 	cluster.Status.AppliedAgentEnvVars = append(settings.DefaultAgentSettingsAsEnvVars(), cluster.Spec.AgentEnvVars...)
 
+	logrus.Infof("Kinara: spec %v", cluster.Spec.ClusterAgentDeploymentCustomization)
+	logrus.Infof("Kinara: status %v", cluster.Status.AppliedClusterAgentDeploymentCustomization)
+
 	cluster.Status.AppliedClusterAgentDeploymentCustomization = cluster.Spec.ClusterAgentDeploymentCustomization
+
+	logrus.Infof("Kinara equal? %v", reflect.DeepEqual(cluster.Status.AppliedClusterAgentDeploymentCustomization, cluster.Spec.ClusterAgentDeploymentCustomization))
 
 	return nil
 }

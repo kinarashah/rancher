@@ -98,9 +98,9 @@ var (
 	Harvester = newFeature(
 		"harvester",
 		"Enable Harvester integration, with ability to import and manage Harvester clusters",
-		true,
-		true,
-		true)
+		false,
+		false,
+		false)
 	RKE1CustomNodeCleanup = newFeature(
 		"rke1-custom-node-cleanup",
 		"Enable cleanup RKE1 custom cluster nodes when they are deleted",

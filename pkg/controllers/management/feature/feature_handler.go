@@ -43,9 +43,9 @@ func (h *handler) sync(_ string, obj *v3.Feature) (*v3.Feature, error) {
 		return obj, h.refreshTokens()
 	}
 
-	if obj.Name == features.Harvester.Name() {
-		return obj, h.toggleHarvesterNodeDriver(obj.Name)
-	}
+	//if obj.Name == features.Harvester.Name() {
+	//	return obj, h.toggleHarvesterNodeDriver(obj.Name)
+	//}
 	return obj, nil
 }
 

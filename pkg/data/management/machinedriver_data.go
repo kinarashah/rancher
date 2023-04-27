@@ -72,6 +72,15 @@ type machineDriverCompare struct {
 }
 
 func addMachineDrivers(management *config.ManagementContext) error {
+	if err := addMachineDriver(Amazonec2driver, "local://", "", "",
+		[]string{"iam.amazonaws.com", "iam.us-gov.amazonaws.com", "iam.%.amazonaws.com.cn", "ec2.%.amazonaws.com", "ec2.%.amazonaws.com.cn", "eks.%.amazonaws.com", "eks.%.amazonaws.com.cn", "kms.%.amazonaws.com", "kms.%.amazonaws.com.cn"},
+		true, true, true, management); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addMachineDrivers2(management *config.ManagementContext) error {
 	if err := addMachineDriver("pinganyunecs", "https://drivers.rancher.cn/node-driver-pinganyun/0.3.0/docker-machine-driver-pinganyunecs-linux.tgz", "https://drivers.rancher.cn/node-driver-pinganyun/0.3.0/component.js", "f84ccec11c2c1970d76d30150916933efe8ca49fe4c422c8954fc37f71273bb5", []string{"drivers.rancher.cn"}, false, false, false, management); err != nil {
 		return err
 	}

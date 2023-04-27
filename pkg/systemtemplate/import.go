@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"sort"
 	"strings"
@@ -109,6 +110,8 @@ func SystemTemplate(resp io.Writer, agentImage, authImage, namespace, token, url
 	if resourceRequirements := util.GetClusterAgentResourceRequirements(cluster); resourceRequirements != nil {
 		agentResourceRequirements = templates.ToYAML(resourceRequirements)
 	}
+
+	fmt.Printf("%+v \n", agentResourceRequirements)
 
 	context := &context{
 		Features:              toFeatureString(features),
