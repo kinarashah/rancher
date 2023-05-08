@@ -2,6 +2,7 @@ package planner
 
 import (
 	"fmt"
+	v32 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"sort"
 
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
@@ -11,6 +12,16 @@ import (
 // generateClusterAgentManifest generates a cluster agent manifest
 func (p *Planner) generateClusterAgentManifest(controlPlane *rkev1.RKEControlPlane, entry *planEntry) ([]byte, error) {
 	if controlPlane.Spec.ManagementClusterName == "local" {
+		return nil, nil
+	}
+
+	mgmtCluster, err := p.managementClusters.Get(controlPlane.Spec.ManagementClusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	if v32.ClusterConditionAgentDeployed.IsTrue(mgmtCluster) {
+		fmt.Printf("Cluster: Agent is deployed, sending empty manifest %s", controlPlane.Spec.ManagementClusterName)
 		return nil, nil
 	}
 
@@ -26,11 +37,6 @@ func (p *Planner) generateClusterAgentManifest(controlPlane *rkev1.RKEControlPla
 	sort.Slice(tokens, func(i, j int) bool {
 		return tokens[i].Name < tokens[j].Name
 	})
-
-	mgmtCluster, err := p.managementClusters.Get(controlPlane.Spec.ManagementClusterName)
-	if err != nil {
-		return nil, err
-	}
 
 	taints, err := getTaints(entry, controlPlane)
 	if err != nil {
