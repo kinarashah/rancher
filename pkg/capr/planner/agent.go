@@ -2,6 +2,7 @@ package planner
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"sort"
 
 	rkev1 "github.com/rancher/rancher/pkg/apis/rke.cattle.io/v1"
@@ -36,6 +37,8 @@ func (p *Planner) generateClusterAgentManifest(controlPlane *rkev1.RKEControlPla
 	if err != nil {
 		return nil, err
 	}
+
+	logrus.Infof("agentManifest: taints %#v", taints)
 
 	return systemtemplate.ForCluster(mgmtCluster, tokens[0].Status.Token, taints, p.secretCache)
 }

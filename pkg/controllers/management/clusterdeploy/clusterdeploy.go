@@ -290,6 +290,8 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 		return nil
 	}
 
+	logrus.Infof("clusterDeploy: desiredTaints %#v", desiredTaints)
+
 	kubeConfig, tokenName, err := cd.getKubeConfig(cluster)
 	if err != nil {
 		return err
@@ -305,7 +307,7 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 		if err != nil {
 			return cluster, err
 		}
-		logrus.Tracef("clusterDeploy: deployAgent: agent YAML: %v", string(yaml))
+		logrus.Infof("clusterDeploy: deployAgent: agent YAML: %v", string(yaml))
 		var output []byte
 		for i := 0; i < 5; i++ {
 			// This will fail almost always the first time because when we create the namespace in the file it won't have privileges.
@@ -313,7 +315,7 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 			logrus.Tracef("clusterDeploy: deployAgent: applying agent YAML for cluster [%s], try #%d: %v", cluster.Name, i+1, string(output))
 			output, err = kubectl.Apply(yaml, kubeConfig)
 			if err == nil {
-				logrus.Debugf("clusterDeploy: deployAgent: successfully applied agent YAML for cluster [%s], try #%d", cluster.Name, i+1)
+				logrus.Infof("clusterDeploy: deployAgent: successfully applied agent YAML for cluster [%s], try #%d", cluster.Name, i+1)
 				break
 			}
 			logrus.Debugf("clusterDeploy: deployAgent: error while applying agent YAML for cluster [%s], try #%d", cluster.Name, i+1)
