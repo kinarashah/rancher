@@ -99,11 +99,13 @@ func SystemTemplate(resp io.Writer, agentImage, authImage, namespace, token, url
 
 	agentEnvVars = templates.ToYAML(envVars)
 
+	logrus.Infof("SystemTemplate: enter appendTolerations %s", cluster.Name)
 	if appendTolerations := util.GetClusterAgentTolerations(cluster); appendTolerations != nil {
 		agentAppendTolerations = templates.ToYAML(appendTolerations)
 		if agentAppendTolerations == "" {
 			return fmt.Errorf("error converting agent append tolerations to YAML")
 		}
+		logrus.Infof("agentAppendTolerations %v", agentAppendTolerations)
 	}
 
 	affinity, err := util.GetClusterAgentAffinity(cluster)
@@ -160,6 +162,7 @@ func GetDesiredFeatures(cluster *apimgmtv3.Cluster) map[string]bool {
 
 func ForCluster(cluster *apimgmtv3.Cluster, token string, taints []corev1.Taint, secretLister v1.SecretLister) ([]byte, error) {
 	buf := &bytes.Buffer{}
+	logrus.Infof("ForCluster: enter SystemTemplate %s", cluster.Name)
 	err := SystemTemplate(buf, GetDesiredAgentImage(cluster),
 		GetDesiredAuthImage(cluster),
 		cluster.Name, token, settings.ServerURL.Get(), cluster.Spec.WindowsPreferedCluster,

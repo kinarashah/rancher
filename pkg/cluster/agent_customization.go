@@ -3,6 +3,7 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/settings"
@@ -16,7 +17,7 @@ func GetClusterAgentTolerations(cluster *v3.Cluster) []corev1.Toleration {
 		cluster.Spec.ClusterAgentDeploymentCustomization.AppendTolerations != nil {
 		return cluster.Spec.ClusterAgentDeploymentCustomization.AppendTolerations
 	}
-
+	logrus.Infof("ClusterAgentTolerations %v", cluster.Spec.ClusterAgentDeploymentCustomization.AppendTolerations)
 	return nil
 }
 
