@@ -298,16 +298,18 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	}
 	defer func() {
 		if err := cd.mgmt.SystemTokens.DeleteToken(tokenName); err != nil {
-			logrus.Errorf("cleanup for clusterdeploy token [%s] failed, will not retry: %v", tokenName, err)
+			logrus.Errorf("clusterDeploy: cleanup for clusterdeploy token [%s] failed, will not retry: %v", tokenName, err)
 		}
 	}()
+
+	logrus.Infof("clusterDeploy: kubeconfig %#v tokenName %s", kubeConfig, tokenName)
 
 	if _, err = apimgmtv3.ClusterConditionAgentDeployed.Do(cluster, func() (runtime.Object, error) {
 		yaml, err := cd.getYAML(cluster, desiredAgent, desiredAuth, desiredFeatures, desiredTaints)
 		if err != nil {
 			return cluster, err
 		}
-		logrus.Infof("clusterDeploy: deployAgent: agent YAML: %v", string(yaml))
+		logrus.Info("clusterDeploy: deployAgent: agent YAML")
 		var output []byte
 		for i := 0; i < 5; i++ {
 			// This will fail almost always the first time because when we create the namespace in the file it won't have privileges.
@@ -374,6 +376,8 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 		return err
 	}
 
+	logrus.Info("clusterDeploy: finished caching agent images")
+
 	cluster.Status.AgentImage = desiredAgent
 	cluster.Status.AgentFeatures = desiredFeatures
 	if cluster.Spec.DesiredAgentImage == "fixed" {
@@ -386,6 +390,8 @@ func (cd *clusterDeploy) deployAgent(cluster *apimgmtv3.Cluster) error {
 	if cluster.Annotations[AgentForceDeployAnn] == "true" {
 		cluster.Annotations[AgentForceDeployAnn] = "false"
 	}
+
+	logrus.Infof("clusterDeploy: updating clusterAnnotation %v", cluster.Annotations[AgentForceDeployAnn])
 
 	cluster.Status.AppliedAgentEnvVars = append(settings.DefaultAgentSettingsAsEnvVars(), cluster.Spec.AgentEnvVars...)
 
