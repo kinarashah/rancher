@@ -121,6 +121,7 @@ type Planner struct {
 	capiClient                    capicontrollers.ClusterClient
 	capiClusters                  capicontrollers.ClusterCache
 	managementClusters            mgmtcontrollers.ClusterCache
+	managementNodes               mgmtcontrollers.NodeCache
 	rancherClusterCache           ranchercontrollers.ClusterCache
 	locker                        locker.Locker
 	etcdS3Args                    s3Args
@@ -154,6 +155,7 @@ func New(ctx context.Context, clients *wrangler.Context, functions InfoFunctions
 		capiClient:                    clients.CAPI.Cluster(),
 		capiClusters:                  clients.CAPI.Cluster().Cache(),
 		managementClusters:            clients.Mgmt.Cluster().Cache(),
+		managementNodes:               clients.Mgmt.Node().Cache(),
 		rancherClusterCache:           clients.Provisioning.Cluster().Cache(),
 		rkeControlPlanes:              clients.RKE.RKEControlPlane(),
 		rkeBootstrap:                  clients.RKE.RKEBootstrap(),
