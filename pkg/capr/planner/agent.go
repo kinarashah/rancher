@@ -39,3 +39,23 @@ func (p *Planner) generateClusterAgentManifest(controlPlane *rkev1.RKEControlPla
 
 	return systemtemplate.ForCluster(mgmtCluster, tokens[0].Status.Token, taints, p.secretCache)
 }
+
+func (p *Planner) generateClusterAgentManifestJob(controlPlane *rkev1.RKEControlPlane, path string) []byte {
+	job := `
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-cluster-agent
+  namespace: cattle-system
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      containers:
+      - name: agent
+        image: rancher/kubectl:v1.23.3
+        command: ["kubectl","get", "pods", "-n", "cattle-system"]
+      restartPolicy: Never
+`
+	return []byte(fmt.Sprintf(job))
+}
