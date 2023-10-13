@@ -574,6 +574,12 @@ func (m *Lifecycle) saveConfig(config *nodeconfig.NodeConfig, nodeDir string, ob
 		return obj, err
 	}
 
+	privateDnsName, err := config.PrivateDNS()
+	if err != nil {
+		return obj, err
+	}
+	logrus.Infof("privateDnsName: %v", privateDnsName)
+
 	keyPath, err := config.SSHKeyPath()
 	if err != nil {
 		return obj, err
@@ -609,7 +615,7 @@ func (m *Lifecycle) saveConfig(config *nodeconfig.NodeConfig, nodeDir string, ob
 		InternalAddress:  internalAddress,
 		User:             sshUser,
 		Role:             roles(obj),
-		HostnameOverride: obj.Spec.RequestedHostname,
+		HostnameOverride: privateDnsName,
 		Labels:           template.Labels,
 	}
 	obj.Status.InternalNodeStatus.Addresses = []v1.NodeAddress{
