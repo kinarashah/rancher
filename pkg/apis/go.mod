@@ -7,6 +7,8 @@ replace github.com/rancher/wrangler v1.1.1 => github.com/rancher/wrangler v1.1.1
 
 replace k8s.io/client-go => github.com/rancher/client-go v1.25.4-rancher1
 
+replace github.com/rancher/rke => github.com/kinarashah/rke v1.3.13-rc2.0.20231013041538-4f3d4e038abd
+
 require (
 	github.com/rancher/aks-operator v1.1.3
 	github.com/rancher/eks-operator v1.2.2

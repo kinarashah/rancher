@@ -863,6 +863,8 @@ github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaR
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
 github.com/karrick/godirwalk v1.16.1 h1:DynhcF+bztK8gooS0+NDJFrdNZjJ3gzVzC545UNA9iw=
 github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
+github.com/kinarashah/rke v1.3.13-rc2.0.20231013041538-4f3d4e038abd h1:mM7pQ1+f18kmvPpzjovFh05mzbClX13k69Ug8/MNML0=
+github.com/kinarashah/rke v1.3.13-rc2.0.20231013041538-4f3d4e038abd/go.mod h1:zCL+we25sFDQb2jo6EojX8zxBfbB7FxL6Lte6A6eCiY=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -1208,8 +1210,6 @@ github.com/rancher/rdns-server v0.0.0-20180802070304-bf662911db6a h1:6xqYlVz4uAX
 github.com/rancher/rdns-server v0.0.0-20180802070304-bf662911db6a/go.mod h1:YW8wJ/coee2n9ed937uPBWQArBaVlxs+5wkkS9KiyDc=
 github.com/rancher/remotedialer v0.2.6-0.20220624190122-ea57207bf2b8 h1:leqh0chjBsXhKWebxxFd5QPcoQLu51EpaHo04ce0o+8=
 github.com/rancher/remotedialer v0.2.6-0.20220624190122-ea57207bf2b8/go.mod h1:BwwztuvViX2JrLLUwDlsYt5DiyUwHLlzynRwkZLAY0Q=
-github.com/rancher/rke v1.4.10 h1:JP3j9mPjPojopN73Qwu5efKw9PQ7od+GKrHpVJLW3fg=
-github.com/rancher/rke v1.4.10/go.mod h1:zCL+we25sFDQb2jo6EojX8zxBfbB7FxL6Lte6A6eCiY=
 github.com/rancher/steve v0.0.0-20230717160251-d040cffef385 h1:xMR4LJY5C4LAkJbmVKYvu4BaCYXx2fu99a0K+gErpA0=
 github.com/rancher/steve v0.0.0-20230717160251-d040cffef385/go.mod h1:lCxhhsajJHMUnj0EU+3mbrucc6mHDYD94abDiWX6I/Y=
 github.com/rancher/system-upgrade-controller/pkg/apis v0.0.0-20210727200656-10b094e30007 h1:ru+mqGnxMmKeU0Q3XIDxkARvInDIqT1hH2amTcsjxI4=
