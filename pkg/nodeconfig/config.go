@@ -133,6 +133,15 @@ func (m *NodeConfig) InternalIP() (string, error) {
 	return convert.ToString(values.GetValueN(config, "Driver", "PrivateIPAddress")), nil
 }
 
+func (m *NodeConfig) PrivateDNS() (string, error) {
+	config, err := m.getConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return convert.ToString(values.GetValueN(config, "Driver", "PrivateDnsName")), nil
+}
+
 func (m *NodeConfig) Save() error {
 	extractedConfig, err := compressConfig(m.fullMachinePath)
 	if err != nil {
