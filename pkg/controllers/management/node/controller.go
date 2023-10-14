@@ -585,12 +585,6 @@ func (m *Lifecycle) saveConfig(config *nodeconfig.NodeConfig, nodeDir string, ob
 		return obj, err
 	}
 
-	privateDnsName, err := config.PrivateDNS()
-	if err != nil {
-		return obj, err
-	}
-	logrus.Infof("privateDnsName: %v", privateDnsName)
-
 	keyPath, err := config.SSHKeyPath()
 	if err != nil {
 		return obj, err
@@ -626,7 +620,7 @@ func (m *Lifecycle) saveConfig(config *nodeconfig.NodeConfig, nodeDir string, ob
 		InternalAddress:  internalAddress,
 		User:             sshUser,
 		Role:             roles(obj),
-		HostnameOverride: privateDnsName,
+		HostnameOverride: obj.Spec.RequestedHostname,
 		Labels:           template.Labels,
 	}
 	obj.Status.InternalNodeStatus.Addresses = []v1.NodeAddress{
@@ -634,6 +628,23 @@ func (m *Lifecycle) saveConfig(config *nodeconfig.NodeConfig, nodeDir string, ob
 			Type:    v1.NodeInternalIP,
 			Address: obj.Status.NodeConfig.Address,
 		},
+	}
+
+	cluster, err := m.clusterLister.Get("", obj.Namespace)
+	if err != nil {
+		return obj, err
+	}
+
+	if cluster.Spec.RancherKubernetesEngineConfig != nil &&
+		cluster.Spec.RancherKubernetesEngineConfig.CloudProvider.Name == "external" {
+		privateDnsName, err := config.PrivateDNS()
+		if err != nil {
+			return obj, err
+		}
+		if privateDnsName != "" {
+			obj.Status.NodeConfig.HostnameOverride = privateDnsName
+		}
+		logrus.Infof("Kinara: HostnameOverride %s", privateDnsName)
 	}
 
 	if len(obj.Status.NodeConfig.Role) == 0 {

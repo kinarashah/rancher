@@ -139,8 +139,6 @@ func (m *NodeConfig) PrivateDNS() (string, error) {
 		return "", err
 	}
 
-	ans, _ := json.Marshal(config)
-	logrus.Infof("values %s", string(ans))
 	return convert.ToString(values.GetValueN(config, "Driver", "PrivateDnsName")), nil
 }
 
