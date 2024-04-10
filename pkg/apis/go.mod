@@ -3,6 +3,8 @@ module github.com/rancher/rancher/pkg/apis
 go 1.21
 
 replace (
+
+	github.com/rancher/norman => github.com/kinarashah/norman v0.0.0-20240410211006-910552398a8b
 	k8s.io/api => k8s.io/api v0.28.6
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.28.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.28.6

@@ -721,44 +721,44 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 		}
 	}
 
-	// check if template is passed. if yes, load template data
-	if hasTemplate(data) {
-		if existingCluster[managementv3.ClusterSpecFieldClusterTemplateRevisionID] == "" {
-			return nil, httperror.NewAPIError(httperror.InvalidOption, fmt.Sprintf("this cluster is not created using a clusterTemplate, cannot update it to use a clusterTemplate now"))
-		}
-
-		clusterTemplateRevision, clusterTemplate, err := r.validateTemplateInput(apiContext, data, true)
-		if err != nil {
-			return nil, err
-		}
-
-		updatedTemplateID := clusterTemplateRevision.Spec.ClusterTemplateName
-		templateID := convert.ToString(existingCluster[managementv3.ClusterSpecFieldClusterTemplateID])
-
-		if !strings.EqualFold(updatedTemplateID, templateID) {
-			return nil, httperror.NewAPIError(httperror.InvalidOption, fmt.Sprintf("cannot update cluster, cluster cannot be changed to a new clusterTemplate"))
-		}
-
-		clusterConfigSchema := apiContext.Schemas.Schema(&managementschema.Version, managementv3.ClusterSpecBaseType)
-		clusterUpdate, err := loadDataFromTemplate(clusterTemplateRevision, clusterTemplate, data, clusterConfigSchema, existingCluster, r.SecretLister)
-		if err != nil {
-			return nil, err
-		}
-		clusterUpdate = cleanQuestions(clusterUpdate)
-
-		data = clusterUpdate
-
-		// keep monitoring and alerting flags on the cluster as is, no turning off these flags from templaterevision.
-		if !clusterTemplateRevision.Spec.ClusterConfig.EnableClusterMonitoring {
-			data[managementv3.ClusterSpecFieldEnableClusterMonitoring] = existingCluster[managementv3.ClusterSpecFieldEnableClusterMonitoring]
-		}
-		if !clusterTemplateRevision.Spec.ClusterConfig.EnableClusterAlerting {
-			data[managementv3.ClusterSpecFieldEnableClusterAlerting] = existingCluster[managementv3.ClusterSpecFieldEnableClusterAlerting]
-		}
-
-	} else if existingCluster[managementv3.ClusterSpecFieldClusterTemplateRevisionID] != nil {
-		return nil, httperror.NewFieldAPIError(httperror.MissingRequired, "ClusterTemplateRevision", "this cluster is created from a clusterTemplateRevision, please pass the clusterTemplateRevision")
-	}
+	//// check if template is passed. if yes, load template data
+	//if hasTemplate(data) {
+	//	if existingCluster[managementv3.ClusterSpecFieldClusterTemplateRevisionID] == "" {
+	//		return nil, httperror.NewAPIError(httperror.InvalidOption, fmt.Sprintf("this cluster is not created using a clusterTemplate, cannot update it to use a clusterTemplate now"))
+	//	}
+	//
+	//	clusterTemplateRevision, clusterTemplate, err := r.validateTemplateInput(apiContext, data, true)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//
+	//	updatedTemplateID := clusterTemplateRevision.Spec.ClusterTemplateName
+	//	templateID := convert.ToString(existingCluster[managementv3.ClusterSpecFieldClusterTemplateID])
+	//
+	//	if !strings.EqualFold(updatedTemplateID, templateID) {
+	//		return nil, httperror.NewAPIError(httperror.InvalidOption, fmt.Sprintf("cannot update cluster, cluster cannot be changed to a new clusterTemplate"))
+	//	}
+	//
+	//	clusterConfigSchema := apiContext.Schemas.Schema(&managementschema.Version, managementv3.ClusterSpecBaseType)
+	//	clusterUpdate, err := loadDataFromTemplate(clusterTemplateRevision, clusterTemplate, data, clusterConfigSchema, existingCluster, r.SecretLister)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	clusterUpdate = cleanQuestions(clusterUpdate)
+	//
+	//	data = clusterUpdate
+	//
+	//	// keep monitoring and alerting flags on the cluster as is, no turning off these flags from templaterevision.
+	//	if !clusterTemplateRevision.Spec.ClusterConfig.EnableClusterMonitoring {
+	//		data[managementv3.ClusterSpecFieldEnableClusterMonitoring] = existingCluster[managementv3.ClusterSpecFieldEnableClusterMonitoring]
+	//	}
+	//	if !clusterTemplateRevision.Spec.ClusterConfig.EnableClusterAlerting {
+	//		data[managementv3.ClusterSpecFieldEnableClusterAlerting] = existingCluster[managementv3.ClusterSpecFieldEnableClusterAlerting]
+	//	}
+	//
+	//} else if existingCluster[managementv3.ClusterSpecFieldClusterTemplateRevisionID] != nil {
+	//	return nil, httperror.NewFieldAPIError(httperror.MissingRequired, "ClusterTemplateRevision", "this cluster is created from a clusterTemplateRevision, please pass the clusterTemplateRevision")
+	//}
 
 	err = setKubernetesVersion(data, false)
 	if err != nil {
@@ -809,138 +809,146 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 		}
 	}
 
-	getSecretByKey := func(key string) string {
-		if v, ok := values.GetValue(existingCluster, clusterSecrets, key); ok && v.(string) != "" {
-			return v.(string)
-		}
-		if v, ok := values.GetValue(existingCluster, key); ok {
-			return v.(string)
-		}
-		return ""
-	}
-	currentRegSecret := getSecretByKey(registrySecretKey)
-	currentS3Secret := getSecretByKey(s3SecretKey)
-	currentWeaveSecret := getSecretByKey(weaveSecretKey)
-	currentVsphereSecret := getSecretByKey(vsphereSecretKey)
-	currentVcenterSecret := getSecretByKey(virtualCenterSecretKey)
-	currentOpenStackSecret := getSecretByKey(openStackSecretKey)
-	currentAADClientSecret := getSecretByKey(aadClientSecretKey)
-	currentAADCertSecret := getSecretByKey(aadClientCertSecretKey)
-	currentACIAPICUserKeySecret := getSecretByKey(aciAPICUserKeySecretKey)
-	currentACITokenSecret := getSecretByKey(aciTokenSecretKey)
-	currentACIKafkaClientKeySecret := getSecretByKey(aciKafkaClientKeySecretKey)
-	currentSecretsEncryptionProvidersSecret := getSecretByKey(secretsEncryptionProvidersSecretKey)
-	currentBastionHostSSHSecret := getSecretByKey(bastionHostSSHKeySecretKey)
-	currentKubeletExtraEnvSecret := getSecretByKey(kubeletExtraEnvSecretKey)
-	currentPrivateRegistryECRSecret := getSecretByKey(privateRegistryECRSecretKey)
-	allSecrets, err := r.migrateSecrets(apiContext.Request.Context(), data, existingCluster,
-		currentRegSecret,
-		currentS3Secret,
-		currentWeaveSecret,
-		currentVsphereSecret,
-		currentVcenterSecret,
-		currentOpenStackSecret,
-		currentAADClientSecret,
-		currentAADCertSecret,
-		currentACIAPICUserKeySecret,
-		currentACITokenSecret,
-		currentACIKafkaClientKeySecret,
-		currentSecretsEncryptionProvidersSecret,
-		currentBastionHostSSHSecret,
-		currentKubeletExtraEnvSecret,
-		currentPrivateRegistryECRSecret)
+	//getSecretByKey := func(key string) string {
+	//	if v, ok := values.GetValue(existingCluster, clusterSecrets, key); ok && v.(string) != "" {
+	//		return v.(string)
+	//	}
+	//	if v, ok := values.GetValue(existingCluster, key); ok {
+	//		return v.(string)
+	//	}
+	//	return ""
+	//}
+	//currentRegSecret := getSecretByKey(registrySecretKey)
+	//currentS3Secret := getSecretByKey(s3SecretKey)
+	//currentWeaveSecret := getSecretByKey(weaveSecretKey)
+	//currentVsphereSecret := getSecretByKey(vsphereSecretKey)
+	//currentVcenterSecret := getSecretByKey(virtualCenterSecretKey)
+	//currentOpenStackSecret := getSecretByKey(openStackSecretKey)
+	//currentAADClientSecret := getSecretByKey(aadClientSecretKey)
+	//currentAADCertSecret := getSecretByKey(aadClientCertSecretKey)
+	//currentACIAPICUserKeySecret := getSecretByKey(aciAPICUserKeySecretKey)
+	//currentACITokenSecret := getSecretByKey(aciTokenSecretKey)
+	//currentACIKafkaClientKeySecret := getSecretByKey(aciKafkaClientKeySecretKey)
+	//currentSecretsEncryptionProvidersSecret := getSecretByKey(secretsEncryptionProvidersSecretKey)
+	//currentBastionHostSSHSecret := getSecretByKey(bastionHostSSHKeySecretKey)
+	//currentKubeletExtraEnvSecret := getSecretByKey(kubeletExtraEnvSecretKey)
+	//currentPrivateRegistryECRSecret := getSecretByKey(privateRegistryECRSecretKey)
+	//allSecrets, err := r.migrateSecrets(apiContext.Request.Context(), data, existingCluster,
+	//	currentRegSecret,
+	//	currentS3Secret,
+	//	currentWeaveSecret,
+	//	currentVsphereSecret,
+	//	currentVcenterSecret,
+	//	currentOpenStackSecret,
+	//	currentAADClientSecret,
+	//	currentAADCertSecret,
+	//	currentACIAPICUserKeySecret,
+	//	currentACITokenSecret,
+	//	currentACIKafkaClientKeySecret,
+	//	currentSecretsEncryptionProvidersSecret,
+	//	currentBastionHostSSHSecret,
+	//	currentKubeletExtraEnvSecret,
+	//	currentPrivateRegistryECRSecret)
+	//
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	if err != nil {
-		return nil, err
-	}
+	ans, err := json.Marshal(data)
+	fmt.Printf("BEFORE UPDATE %v \n", string(ans))
+
 	data, err = r.Store.Update(apiContext, schema, data, id)
-	if err != nil {
-		cleanup := func(secret *corev1.Secret, current string) {
-			if secret != nil && current == "" {
-				if cleanupErr := r.secretMigrator.Cleanup(secret.Name); cleanupErr != nil {
-					logrus.Errorf("cluster store: encountered error while handling migration error: %v, original error: %v", cleanupErr, err)
-				}
-			}
-		}
+	//if err != nil {
+	//	cleanup := func(secret *corev1.Secret, current string) {
+	//		if secret != nil && current == "" {
+	//			if cleanupErr := r.secretMigrator.Cleanup(secret.Name); cleanupErr != nil {
+	//				logrus.Errorf("cluster store: encountered error while handling migration error: %v, original error: %v", cleanupErr, err)
+	//			}
+	//		}
+	//	}
+	//
+	//	cleanup(allSecrets.regSecret, currentRegSecret)
+	//	cleanup(allSecrets.s3Secret, currentS3Secret)
+	//	cleanup(allSecrets.weaveSecret, currentWeaveSecret)
+	//	cleanup(allSecrets.vsphereSecret, currentVsphereSecret)
+	//	cleanup(allSecrets.vcenterSecret, currentVcenterSecret)
+	//	cleanup(allSecrets.openStackSecret, currentOpenStackSecret)
+	//	cleanup(allSecrets.aadClientSecret, currentAADClientSecret)
+	//	cleanup(allSecrets.aadCertSecret, currentAADCertSecret)
+	//	cleanup(allSecrets.aciAPICUserKeySecret, currentACIAPICUserKeySecret)
+	//	cleanup(allSecrets.aciTokenSecret, currentACITokenSecret)
+	//	cleanup(allSecrets.aciKafkaClientKeySecret, currentACIKafkaClientKeySecret)
+	//	cleanup(allSecrets.secretsEncryptionProvidersSecret, currentSecretsEncryptionProvidersSecret)
+	//	cleanup(allSecrets.bastionHostSSHKeySecret, currentBastionHostSSHSecret)
+	//	cleanup(allSecrets.kubeletExtraEnvSecret, currentKubeletExtraEnvSecret)
+	//	cleanup(allSecrets.privateRegistryECRSecret, currentPrivateRegistryECRSecret)
+	//
+	//	return nil, err
+	//}
+	//if allSecrets.regSecret != nil || allSecrets.s3Secret != nil || allSecrets.weaveSecret != nil || allSecrets.vsphereSecret != nil || allSecrets.vcenterSecret != nil || allSecrets.openStackSecret != nil || allSecrets.aadClientSecret != nil || allSecrets.aadCertSecret != nil || allSecrets.secretsEncryptionProvidersSecret != nil {
+	//	if r.ClusterClient == nil {
+	//		return nil, fmt.Errorf("Error updating the cluster: k8s client is nil")
+	//	}
+	//	cluster, err := r.ClusterClient.Get(apiContext.Request.Context(), existingCluster["id"].(string), metav1.GetOptions{})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	removeFromStatus := func(secret *corev1.Secret, key string) {
+	//		if secret != nil {
+	//			if _, ok := existingCluster[key]; ok {
+	//				values.RemoveValue(cluster.Object, "status", key)
+	//			}
+	//		}
+	//	}
+	//	removeFromStatus(allSecrets.regSecret, registrySecretKey)
+	//	removeFromStatus(allSecrets.s3Secret, s3SecretKey)
+	//	removeFromStatus(allSecrets.weaveSecret, weaveSecretKey)
+	//	removeFromStatus(allSecrets.vsphereSecret, vsphereSecretKey)
+	//	removeFromStatus(allSecrets.vcenterSecret, virtualCenterSecretKey)
+	//	removeFromStatus(allSecrets.openStackSecret, openStackSecretKey)
+	//	removeFromStatus(allSecrets.aadClientSecret, aadClientSecretKey)
+	//	removeFromStatus(allSecrets.aadCertSecret, aadClientCertSecretKey)
+	//
+	//	_, err = r.ClusterClient.Update(apiContext.Request.Context(), cluster, metav1.UpdateOptions{})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+	//owner := metav1.OwnerReference{
+	//	APIVersion: "management.cattle.io/v3",
+	//	Kind:       "Cluster",
+	//	Name:       data["id"].(string),
+	//	UID:        k8sTypes.UID(data["uuid"].(string)),
+	//}
+	//errMsg := fmt.Sprintf("cluster store: failed to set %s %s as secret owner", owner.Kind, owner.Name)
+	//updateOwner := func(secret *corev1.Secret) {
+	//	if secret != nil {
+	//		err = r.secretMigrator.UpdateSecretOwnerReference(secret, owner)
+	//		if err != nil {
+	//			logrus.Errorf(errMsg)
+	//		}
+	//	}
+	//}
+	//
+	//updateOwner(allSecrets.regSecret)
+	//updateOwner(allSecrets.s3Secret)
+	//updateOwner(allSecrets.weaveSecret)
+	//updateOwner(allSecrets.vsphereSecret)
+	//updateOwner(allSecrets.vcenterSecret)
+	//updateOwner(allSecrets.openStackSecret)
+	//updateOwner(allSecrets.aadClientSecret)
+	//updateOwner(allSecrets.aadCertSecret)
+	//updateOwner(allSecrets.aciAPICUserKeySecret)
+	//updateOwner(allSecrets.aciTokenSecret)
+	//updateOwner(allSecrets.aciKafkaClientKeySecret)
+	//updateOwner(allSecrets.secretsEncryptionProvidersSecret)
+	//updateOwner(allSecrets.bastionHostSSHKeySecret)
+	//updateOwner(allSecrets.kubeletExtraEnvSecret)
+	//updateOwner(allSecrets.privateRegistryECRSecret)
 
-		cleanup(allSecrets.regSecret, currentRegSecret)
-		cleanup(allSecrets.s3Secret, currentS3Secret)
-		cleanup(allSecrets.weaveSecret, currentWeaveSecret)
-		cleanup(allSecrets.vsphereSecret, currentVsphereSecret)
-		cleanup(allSecrets.vcenterSecret, currentVcenterSecret)
-		cleanup(allSecrets.openStackSecret, currentOpenStackSecret)
-		cleanup(allSecrets.aadClientSecret, currentAADClientSecret)
-		cleanup(allSecrets.aadCertSecret, currentAADCertSecret)
-		cleanup(allSecrets.aciAPICUserKeySecret, currentACIAPICUserKeySecret)
-		cleanup(allSecrets.aciTokenSecret, currentACITokenSecret)
-		cleanup(allSecrets.aciKafkaClientKeySecret, currentACIKafkaClientKeySecret)
-		cleanup(allSecrets.secretsEncryptionProvidersSecret, currentSecretsEncryptionProvidersSecret)
-		cleanup(allSecrets.bastionHostSSHKeySecret, currentBastionHostSSHSecret)
-		cleanup(allSecrets.kubeletExtraEnvSecret, currentKubeletExtraEnvSecret)
-		cleanup(allSecrets.privateRegistryECRSecret, currentPrivateRegistryECRSecret)
+	ans, err = json.Marshal(data)
+	fmt.Printf("AFTER UPDATE %v \n", string(ans))
 
-		return nil, err
-	}
-	if allSecrets.regSecret != nil || allSecrets.s3Secret != nil || allSecrets.weaveSecret != nil || allSecrets.vsphereSecret != nil || allSecrets.vcenterSecret != nil || allSecrets.openStackSecret != nil || allSecrets.aadClientSecret != nil || allSecrets.aadCertSecret != nil || allSecrets.secretsEncryptionProvidersSecret != nil {
-		if r.ClusterClient == nil {
-			return nil, fmt.Errorf("Error updating the cluster: k8s client is nil")
-		}
-		cluster, err := r.ClusterClient.Get(apiContext.Request.Context(), existingCluster["id"].(string), metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-		removeFromStatus := func(secret *corev1.Secret, key string) {
-			if secret != nil {
-				if _, ok := existingCluster[key]; ok {
-					values.RemoveValue(cluster.Object, "status", key)
-				}
-			}
-		}
-		removeFromStatus(allSecrets.regSecret, registrySecretKey)
-		removeFromStatus(allSecrets.s3Secret, s3SecretKey)
-		removeFromStatus(allSecrets.weaveSecret, weaveSecretKey)
-		removeFromStatus(allSecrets.vsphereSecret, vsphereSecretKey)
-		removeFromStatus(allSecrets.vcenterSecret, virtualCenterSecretKey)
-		removeFromStatus(allSecrets.openStackSecret, openStackSecretKey)
-		removeFromStatus(allSecrets.aadClientSecret, aadClientSecretKey)
-		removeFromStatus(allSecrets.aadCertSecret, aadClientCertSecretKey)
-
-		_, err = r.ClusterClient.Update(apiContext.Request.Context(), cluster, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, err
-		}
-	}
-	owner := metav1.OwnerReference{
-		APIVersion: "management.cattle.io/v3",
-		Kind:       "Cluster",
-		Name:       data["id"].(string),
-		UID:        k8sTypes.UID(data["uuid"].(string)),
-	}
-	errMsg := fmt.Sprintf("cluster store: failed to set %s %s as secret owner", owner.Kind, owner.Name)
-	updateOwner := func(secret *corev1.Secret) {
-		if secret != nil {
-			err = r.secretMigrator.UpdateSecretOwnerReference(secret, owner)
-			if err != nil {
-				logrus.Errorf(errMsg)
-			}
-		}
-	}
-
-	updateOwner(allSecrets.regSecret)
-	updateOwner(allSecrets.s3Secret)
-	updateOwner(allSecrets.weaveSecret)
-	updateOwner(allSecrets.vsphereSecret)
-	updateOwner(allSecrets.vcenterSecret)
-	updateOwner(allSecrets.openStackSecret)
-	updateOwner(allSecrets.aadClientSecret)
-	updateOwner(allSecrets.aadCertSecret)
-	updateOwner(allSecrets.aciAPICUserKeySecret)
-	updateOwner(allSecrets.aciTokenSecret)
-	updateOwner(allSecrets.aciKafkaClientKeySecret)
-	updateOwner(allSecrets.secretsEncryptionProvidersSecret)
-	updateOwner(allSecrets.bastionHostSSHKeySecret)
-	updateOwner(allSecrets.kubeletExtraEnvSecret)
-	updateOwner(allSecrets.privateRegistryECRSecret)
 	return data, err
 }
 
