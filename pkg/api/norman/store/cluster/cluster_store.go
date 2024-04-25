@@ -312,6 +312,9 @@ func (r *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 		return nil, err
 	}
 
+	ans, err := json.Marshal(data)
+	fmt.Printf("BEFORE CREATE %v \n", string(ans))
+
 	data, err = r.Store.Create(apiContext, schema, data)
 	if err != nil {
 		cleanup := func(secret *corev1.Secret) {
@@ -371,6 +374,9 @@ func (r *Store) Create(apiContext *types.APIContext, schema *types.Schema, data 
 	updateOwner(allSecrets.bastionHostSSHKeySecret)
 	updateOwner(allSecrets.kubeletExtraEnvSecret)
 	updateOwner(allSecrets.privateRegistryECRSecret)
+
+	ans, err = json.Marshal(data)
+	fmt.Printf("AFTER CREATE %v \n", string(ans))
 
 	return data, nil
 }
@@ -849,6 +855,10 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 	if err != nil {
 		return nil, err
 	}
+
+	ans, err := json.Marshal(data)
+	fmt.Printf("BEFORE UPDATE %v \n", string(ans))
+
 	data, err = r.Store.Update(apiContext, schema, data, id)
 	if err != nil {
 		cleanup := func(secret *corev1.Secret, current string) {
@@ -937,6 +947,10 @@ func (r *Store) Update(apiContext *types.APIContext, schema *types.Schema, data 
 	updateOwner(allSecrets.bastionHostSSHKeySecret)
 	updateOwner(allSecrets.kubeletExtraEnvSecret)
 	updateOwner(allSecrets.privateRegistryECRSecret)
+
+	ans, err = json.Marshal(data)
+	fmt.Printf("AFTER UPDATE %v \n", string(ans))
+
 	return data, err
 }
 
