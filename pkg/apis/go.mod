@@ -4,6 +4,7 @@ go 1.20
 
 replace (
 	github.com/rancher/norman => github.com/kinarashah/norman v0.0.0-20240425221009-722d5a9900fd
+	github.com/rancher/rke => github.com/kinarashah/rke v1.3.13-rc2.0.20240429231659-3d31b9bd3dba
 	// wrangler bracnhes need to be updated before replace can be removed
 	github.com/rancher/wrangler v1.1.1 => github.com/rancher/wrangler v1.1.1-0.20230831050635-df1bd5aae9df
 	k8s.io/api => k8s.io/api v0.27.6
