@@ -14,6 +14,7 @@ const (
 	RancherKubernetesEngineConfigFieldEnableCRIDockerd    = "enableCriDockerd"
 	RancherKubernetesEngineConfigFieldIgnoreDockerVersion = "ignoreDockerVersion"
 	RancherKubernetesEngineConfigFieldIngress             = "ingress"
+	RancherKubernetesEngineConfigFieldKinaraName          = "kinaraName"
 	RancherKubernetesEngineConfigFieldMonitoring          = "monitoring"
 	RancherKubernetesEngineConfigFieldNetwork             = "network"
 	RancherKubernetesEngineConfigFieldNodes               = "nodes"
@@ -44,6 +45,7 @@ type RancherKubernetesEngineConfig struct {
 	EnableCRIDockerd    *bool                `json:"enableCriDockerd,omitempty" yaml:"enableCriDockerd,omitempty"`
 	IgnoreDockerVersion *bool                `json:"ignoreDockerVersion,omitempty" yaml:"ignoreDockerVersion,omitempty"`
 	Ingress             *IngressConfig       `json:"ingress,omitempty" yaml:"ingress,omitempty"`
+	KinaraName          string               `json:"kinaraName,omitempty" yaml:"kinaraName,omitempty"`
 	Monitoring          *MonitoringConfig    `json:"monitoring,omitempty" yaml:"monitoring,omitempty"`
 	Network             *NetworkConfig       `json:"network,omitempty" yaml:"network,omitempty"`
 	Nodes               []RKEConfigNode      `json:"nodes,omitempty" yaml:"nodes,omitempty"`

@@ -23,6 +23,8 @@ const (
 	AciNetworkProviderFieldApicUserCrt                          = "apicUserCrt"
 	AciNetworkProviderFieldApicUserKey                          = "apicUserKey"
 	AciNetworkProviderFieldApicUserName                         = "apicUserName"
+	AciNetworkProviderFieldBokenName                            = "bokenName"
+	AciNetworkProviderFieldBpicHosts                            = "bpicHosts"
 	AciNetworkProviderFieldCApic                                = "capic"
 	AciNetworkProviderFieldControllerLogLevel                   = "controllerLogLevel"
 	AciNetworkProviderFieldDhcpDelay                            = "dhcpDelay"
@@ -130,6 +132,8 @@ type AciNetworkProvider struct {
 	ApicUserCrt                          string              `json:"apicUserCrt,omitempty" yaml:"apicUserCrt,omitempty"`
 	ApicUserKey                          string              `json:"apicUserKey,omitempty" yaml:"apicUserKey,omitempty"`
 	ApicUserName                         string              `json:"apicUserName,omitempty" yaml:"apicUserName,omitempty"`
+	BokenName                            string              `json:"bokenName,omitempty" yaml:"bokenName,omitempty"`
+	BpicHosts                            []string            `json:"bpicHosts,omitempty" yaml:"bpicHosts,omitempty"`
 	CApic                                string              `json:"capic,omitempty" yaml:"capic,omitempty"`
 	ControllerLogLevel                   string              `json:"controllerLogLevel,omitempty" yaml:"controllerLogLevel,omitempty"`
 	DhcpDelay                            string              `json:"dhcpDelay,omitempty" yaml:"dhcpDelay,omitempty"`
