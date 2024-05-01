@@ -430,8 +430,8 @@ github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/X
 github.com/jtolds/gls v4.20.0+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVYBRgL+9YlvaHOwJU=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
-github.com/kinarashah/rke v1.3.13-rc2.0.20240430225506-1511445d442d h1:O5610IWu5AuA/P+gHcmGrgWH4EzCigeokQbopGIwf+c=
-github.com/kinarashah/rke v1.3.13-rc2.0.20240430225506-1511445d442d/go.mod h1:FYb66B2+kAJVQ80SFEr56mC9yjm7TrviK2miZG+c5qY=
+github.com/kinarashah/rke v1.3.13-rc2.0.20240501032534-0e567255e8a2 h1:QFIuByIzODD41UyjVfwxZs5GyK8UETq4uDgouNvNV/c=
+github.com/kinarashah/rke v1.3.13-rc2.0.20240501032534-0e567255e8a2/go.mod h1:FYb66B2+kAJVQ80SFEr56mC9yjm7TrviK2miZG+c5qY=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

@@ -996,8 +996,8 @@ github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E
 github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88/go.mod h1:3w7q1U84EfirKl04SVQ/s7nPm1ZPhiXd34z40TNz36k=
 github.com/karrick/godirwalk v1.16.1 h1:DynhcF+bztK8gooS0+NDJFrdNZjJ3gzVzC545UNA9iw=
 github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
-github.com/kinarashah/rke v1.3.13-rc2.0.20240430225506-1511445d442d h1:O5610IWu5AuA/P+gHcmGrgWH4EzCigeokQbopGIwf+c=
-github.com/kinarashah/rke v1.3.13-rc2.0.20240430225506-1511445d442d/go.mod h1:FYb66B2+kAJVQ80SFEr56mC9yjm7TrviK2miZG+c5qY=
+github.com/kinarashah/rke v1.3.13-rc2.0.20240501032534-0e567255e8a2 h1:QFIuByIzODD41UyjVfwxZs5GyK8UETq4uDgouNvNV/c=
+github.com/kinarashah/rke v1.3.13-rc2.0.20240501032534-0e567255e8a2/go.mod h1:FYb66B2+kAJVQ80SFEr56mC9yjm7TrviK2miZG+c5qY=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

@@ -48,6 +48,7 @@ const (
 	AciNetworkProviderFieldKafkaBrokers                         = "kafkaBrokers"
 	AciNetworkProviderFieldKafkaClientCrt                       = "kafkaClientCrt"
 	AciNetworkProviderFieldKafkaClientKey                       = "kafkaClientKey"
+	AciNetworkProviderFieldKinaraName                           = "kinaraName"
 	AciNetworkProviderFieldKubeAPIVlan                          = "kubeApiVlan"
 	AciNetworkProviderFieldL3Out                                = "l3out"
 	AciNetworkProviderFieldL3OutExternalNetworks                = "l3outExternalNetworks"
@@ -157,6 +158,7 @@ type AciNetworkProvider struct {
 	KafkaBrokers                         []string            `json:"kafkaBrokers,omitempty" yaml:"kafkaBrokers,omitempty"`
 	KafkaClientCrt                       string              `json:"kafkaClientCrt,omitempty" yaml:"kafkaClientCrt,omitempty"`
 	KafkaClientKey                       string              `json:"kafkaClientKey,omitempty" yaml:"kafkaClientKey,omitempty"`
+	KinaraName                           string              `json:"kinaraName,omitempty" yaml:"kinaraName,omitempty"`
 	KubeAPIVlan                          string              `json:"kubeApiVlan,omitempty" yaml:"kubeApiVlan,omitempty"`
 	L3Out                                string              `json:"l3out,omitempty" yaml:"l3out,omitempty"`
 	L3OutExternalNetworks                []string            `json:"l3outExternalNetworks,omitempty" yaml:"l3outExternalNetworks,omitempty"`

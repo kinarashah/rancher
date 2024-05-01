@@ -3,7 +3,7 @@ module github.com/rancher/rancher/pkg/apis
 go 1.19
 
 replace (
-	github.com/rancher/rke => github.com/kinarashah/rke v1.3.13-rc2.0.20240430225506-1511445d442d
+	github.com/rancher/rke => github.com/kinarashah/rke v1.3.13-rc2.0.20240501032534-0e567255e8a2
 	k8s.io/client-go => k8s.io/client-go v0.24.2
 )
 
