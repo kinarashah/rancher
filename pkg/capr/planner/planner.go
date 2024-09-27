@@ -792,6 +792,7 @@ func PruneEmpty(config map[string]interface{}) {
 	}
 }
 
+
 // getTaints returns a slice of taints for the machine in question
 func getTaints(entry *planEntry, cp *rkev1.RKEControlPlane) (result []corev1.Taint, _ error) {
 	data := entry.Metadata.Annotations[capr.TaintsAnnotation]
