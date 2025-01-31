@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 
@@ -39,12 +40,13 @@ import (
 )
 
 const (
-	ByCluster             = "by-cluster"
-	ByCloudCred           = "by-cloud-cred"
-	creatorIDAnn          = "field.cattle.io/creatorId"
-	administratedAnn      = "provisioning.cattle.io/administrated"
-	mgmtClusterNameAnn    = "provisioning.cattle.io/management-cluster-name"
-	fleetWorkspaceNameAnn = "provisioning.cattle.io/fleet-workspace-name"
+	ByCluster                 = "by-cluster"
+	ByCloudCred               = "by-cloud-cred"
+	creatorIDAnn              = "field.cattle.io/creatorId"
+	administratedAnn          = "provisioning.cattle.io/administrated"
+	mgmtClusterNameAnn        = "provisioning.cattle.io/management-cluster-name"
+	fleetWorkspaceNameAnn     = "provisioning.cattle.io/fleet-workspace-name"
+	mgmtClusterDisplayNameAnn = "provisioning.cattle.io/management-cluster-display-name"
 )
 
 var (
@@ -186,13 +188,33 @@ func (h *handler) isLegacyCluster(cluster interface{}) bool {
 }
 
 // generateProvisioningClusterFromLegacyCluster will generate a clusters.provisioning.cattle.io/v1 object with a passed
-// in clusters.management.cattle.io/v3 object. It will not generate a clusters.provisioning.cattle.io/v1 cluster if the
-// cluster FleetWorkspaceName is empty or if the cluster name does not match (c-XXXXX|local) where XXXXX is a random
-// string of characters.
+// in clusters.management.cattle.io/v3 object. It copies the displayName from clusters.management.cattle.io/v3 to clusters.provisioning.cattle.io/v1.
+// It will not generate a clusters.provisioning.cattle.io/v1 cluster if the cluster FleetWorkspaceName is empty or
+// if the cluster name does not match (c-XXXXX|local) where XXXXX is a random string of characters.
 func (h *handler) generateProvisioningClusterFromLegacyCluster(cluster *v3.Cluster, status v3.ClusterStatus) ([]runtime.Object, v3.ClusterStatus, error) {
 	if !h.isLegacyCluster(cluster) || cluster.Spec.FleetWorkspaceName == "" {
+		if cluster.Spec.FleetWorkspaceName != "" {
+			logrus.Infof("namespace: %v", cluster.Spec.FleetWorkspaceName)
+			// copy the user-entered name from the management cluster to the provisioning cluster for UI
+			provCluster, err := h.clusterCache.Get(cluster.Spec.FleetWorkspaceName, cluster.Spec.DisplayName)
+			if err != nil {
+				if !apierror.IsNotFound(err) {
+					return nil, status, err
+				}
+			} else if provCluster.Annotations[mgmtClusterDisplayNameAnn] != cluster.Name {
+				provClusterCopy := provCluster.DeepCopy()
+				if provClusterCopy.Annotations == nil {
+					provClusterCopy.Annotations = make(map[string]string)
+				}
+				provClusterCopy.Annotations[mgmtClusterDisplayNameAnn] = cluster.Name
+				if _, err = h.clusters.Update(provClusterCopy); err != nil {
+					return nil, status, err
+				}
+			}
+		}
 		return nil, status, nil
 	}
+
 	provCluster := &v1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        cluster.Name,
@@ -201,6 +223,8 @@ func (h *handler) generateProvisioningClusterFromLegacyCluster(cluster *v3.Clust
 			Annotations: yaml.CleanAnnotationsForExport(cluster.Annotations),
 		},
 	}
+
+	provCluster.Annotations[mgmtClusterDisplayNameAnn] = cluster.Spec.DisplayName
 
 	if cluster.Spec.ClusterAgentDeploymentCustomization != nil {
 		clusterAgentCustomizationCopy := cluster.Spec.ClusterAgentDeploymentCustomization.DeepCopy()

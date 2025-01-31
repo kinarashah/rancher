@@ -7,6 +7,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	v1 "github.com/rancher/rancher/pkg/apis/provisioning.cattle.io/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic/fake"
+	ctrlfake "github.com/rancher/wrangler/v3/pkg/generic/fake"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
@@ -56,11 +57,34 @@ func TestController_generateProvisioningClusterFromLegacyCluster(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test-legacy-management-cluster-name",
+			cluster: &v3.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "c-33333",
+				},
+				Spec: v3.ClusterSpec{
+					DisplayName:        "display-name",
+					FleetWorkspaceName: "test-fleet-workspace-name",
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := handler{}
+			mockCtrl := gomock.NewController(t)
+			clusterCache := ctrlfake.NewMockCacheInterface[*v1.Cluster](mockCtrl)
+
+			clusterCache.EXPECT().Get("test-fleet-workspace-name", "c-33333").DoAndReturn(func(namespace, name string) (*v1.Cluster, error) {
+				obj := &v1.Cluster{}
+				obj.Name = "c-33333"
+				return obj, nil
+			}).AnyTimes()
+
+			h := handler{
+				clusterCache: clusterCache,
+			}
 
 			obj, _, err := h.generateProvisioningClusterFromLegacyCluster(tt.cluster, tt.cluster.Status)
 
@@ -75,6 +99,8 @@ func TestController_generateProvisioningClusterFromLegacyCluster(t *testing.T) {
 			case "test-cluster-agent-customization":
 				assert.Equal(t, getTestClusterAgentCustomizationV1(), provCluster.Spec.ClusterAgentDeploymentCustomization)
 				assert.Equal(t, getTestFleetAgentCustomizationV1(), provCluster.Spec.FleetAgentDeploymentCustomization)
+			case "test-legacy-management-cluster-name":
+				assert.Equal(t, provCluster.Annotations[mgmtClusterDisplayNameAnn], tt.cluster.Spec.DisplayName)
 			}
 		})
 	}
