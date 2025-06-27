@@ -46,7 +46,7 @@ func (s *ShellLinkHandler) LinkHandler(apiContext *types.APIContext, next types.
 		TTL:          &shellTTL,
 		Randomize:    true,
 	}
-	tokenKey, _, err := userManager.EnsureToken(input)
+	token, err := userManager.EnsureToken(input)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (s *ShellLinkHandler) LinkHandler(apiContext *types.APIContext, next types.
 			vars.Add("stderr", "1")
 			vars.Add("tty", "1")
 			vars.Add("command", "kubectl-shell.sh")
-			vars.Add("command", tokenKey)
+			vars.Add("command", token)
 			vars.Add("command", context.ClusterName)
 			vars.Add("command", cacerts)
 

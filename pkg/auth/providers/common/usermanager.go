@@ -16,8 +16,8 @@ import (
 	"github.com/rancher/rancher/pkg/auth/tokens"
 	tokenUtil "github.com/rancher/rancher/pkg/auth/tokens"
 	wrangmgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
+	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/user"
-	"github.com/rancher/rancher/pkg/wrangler"
 	wrangrbacv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/rbac/v1"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
 	"github.com/sirupsen/logrus"
@@ -25,7 +25,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
@@ -40,8 +39,8 @@ const (
 	roleTemplatesRequired        = "authz.management.cattle.io/creator-role-bindings"
 )
 
-func NewUserManagerNoBindings(wranglerContext *wrangler.Context) (user.Manager, error) {
-	userInformer := wranglerContext.Mgmt.User().Informer()
+func NewUserManagerNoBindings(scaledContext *config.ScaledContext) (user.Manager, error) {
+	userInformer := scaledContext.Wrangler.Mgmt.User().Informer()
 	// registering the same index more than once will cause an error. Since we attempt to register this index in multiple
 	// locations, we need to verify if it has already been registered.
 	if _, ok := userInformer.GetIndexer().GetIndexers()[userByPrincipalIndex]; !ok {
@@ -54,11 +53,11 @@ func NewUserManagerNoBindings(wranglerContext *wrangler.Context) (user.Manager, 
 	}
 
 	return &userManager{
-		users:       wranglerContext.Mgmt.User(),
+		users:       scaledContext.Wrangler.Mgmt.User(),
 		userIndexer: userInformer.GetIndexer(),
-		tokens:      wranglerContext.Mgmt.Token(),
-		tokenLister: wranglerContext.Mgmt.Token().Cache(),
-		rbacClient:  wranglerContext.RBAC,
+		tokens:      scaledContext.Wrangler.Mgmt.Token(),
+		tokenLister: scaledContext.Wrangler.Mgmt.Token().Cache(),
+		rbacClient:  scaledContext.Wrangler.RBAC,
 	}, nil
 }
 
@@ -69,8 +68,8 @@ var backoff = wait.Backoff{
 	Steps:    7,
 }
 
-func NewUserManager(wranglerContext *wrangler.Context) (user.Manager, error) {
-	userInformer := wranglerContext.Mgmt.User().Informer()
+func NewUserManager(scaledContext *config.ScaledContext) (user.Manager, error) {
+	userInformer := scaledContext.Wrangler.Mgmt.User().Informer()
 	// registering the same index more than once will cause an error. Since we attempt to register this index in multiple
 	// locations, we need to verify if it has already been registered.
 	if _, ok := userInformer.GetIndexer().GetIndexers()[userByPrincipalIndex]; !ok {
@@ -82,7 +81,7 @@ func NewUserManager(wranglerContext *wrangler.Context) (user.Manager, error) {
 		}
 	}
 
-	crtbInformer := wranglerContext.Mgmt.ClusterRoleTemplateBinding().Informer()
+	crtbInformer := scaledContext.Wrangler.Mgmt.ClusterRoleTemplateBinding().Informer()
 	crtbIndexers := map[string]cache.IndexFunc{
 		crtbsByPrincipalAndUserIndex: crtbsByPrincipalAndUser,
 	}
@@ -90,7 +89,7 @@ func NewUserManager(wranglerContext *wrangler.Context) (user.Manager, error) {
 		return nil, err
 	}
 
-	prtbInformer := wranglerContext.Mgmt.ProjectRoleTemplateBinding().Informer()
+	prtbInformer := scaledContext.Wrangler.Mgmt.ProjectRoleTemplateBinding().Informer()
 	prtbIndexers := map[string]cache.IndexFunc{
 		prtbsByPrincipalAndUserIndex: prtbsByPrincipalAndUser,
 	}
@@ -98,7 +97,7 @@ func NewUserManager(wranglerContext *wrangler.Context) (user.Manager, error) {
 		return nil, err
 	}
 
-	grbInformer := wranglerContext.Mgmt.GlobalRoleBinding().Informer()
+	grbInformer := scaledContext.Wrangler.Mgmt.GlobalRoleBinding().Informer()
 	grbIndexers := map[string]cache.IndexFunc{
 		grbByUserIndex: grbByUser,
 	}
@@ -108,18 +107,18 @@ func NewUserManager(wranglerContext *wrangler.Context) (user.Manager, error) {
 
 	return &userManager{
 		manageBindings:           true,
-		users:                    wranglerContext.Mgmt.User(),
+		users:                    scaledContext.Wrangler.Mgmt.User(),
 		userIndexer:              userInformer.GetIndexer(),
 		crtbIndexer:              crtbInformer.GetIndexer(),
 		prtbIndexer:              prtbInformer.GetIndexer(),
-		tokens:                   wranglerContext.Mgmt.Token(),
-		tokenLister:              wranglerContext.Mgmt.Token().Cache(),
-		globalRoleBindings:       wranglerContext.Mgmt.GlobalRoleBinding(),
-		globalRoleLister:         wranglerContext.Mgmt.GlobalRole().Cache(),
+		tokens:                   scaledContext.Wrangler.Mgmt.Token(),
+		tokenLister:              scaledContext.Wrangler.Mgmt.Token().Cache(),
+		globalRoleBindings:       scaledContext.Wrangler.Mgmt.GlobalRoleBinding(),
+		globalRoleLister:         scaledContext.Wrangler.Mgmt.GlobalRole().Cache(),
 		grbIndexer:               grbInformer.GetIndexer(),
-		clusterRoleLister:        wranglerContext.RBAC.ClusterRole().Cache(),
-		clusterRoleBindingLister: wranglerContext.RBAC.ClusterRoleBinding().Cache(),
-		rbacClient:               wranglerContext.RBAC,
+		clusterRoleLister:        scaledContext.Wrangler.RBAC.ClusterRole().Cache(),
+		clusterRoleBindingLister: scaledContext.Wrangler.RBAC.ClusterRoleBinding().Cache(),
+		rbacClient:               scaledContext.Wrangler.RBAC,
 	}, nil
 }
 
@@ -237,13 +236,13 @@ func (m *userManager) CheckAccess(accessMode string, allowedPrincipalIDs []strin
 }
 
 // creates tokens with 0 ttl and returns token in 'token.Name:token.Token' format
-func (m *userManager) EnsureToken(input user.TokenInput) (string, runtime.Object, error) {
+func (m *userManager) EnsureToken(input user.TokenInput) (string, error) {
 	return m.EnsureClusterToken("", input)
 }
 
-func (m *userManager) EnsureClusterToken(clusterName string, input user.TokenInput) (string, runtime.Object, error) {
+func (m *userManager) EnsureClusterToken(clusterName string, input user.TokenInput) (string, error) {
 	if strings.HasPrefix(input.TokenName, "token-") {
-		return "", nil, errors.New("token names can't start with token-")
+		return "", errors.New("token names can't start with token-")
 	}
 
 	var err error
@@ -251,33 +250,27 @@ func (m *userManager) EnsureClusterToken(clusterName string, input user.TokenInp
 	if !input.Randomize {
 		token, err = m.tokenLister.Get(input.TokenName)
 		if err != nil && !apierrors.IsNotFound(err) {
-			return "", nil, err
+			return "", err
 		}
 		if err == nil {
 			if err := m.tokens.Delete(token.Name, &v1.DeleteOptions{}); err != nil {
-				return "", nil, err
+				return "", err
 			}
 		}
 	}
 
 	key, err := randomtoken.Generate()
 	if err != nil {
-		return "", nil, errors.New("failed to generate token key")
+		return "", errors.New("failed to generate token key")
 	}
-
-	labels := map[string]string{}
-	if input.Labels != nil {
-		for k, v := range input.Labels {
-			labels[k] = v
-		}
-	}
-	labels[tokens.UserIDLabel] = input.UserName
-	labels[tokens.TokenKindLabel] = input.Kind
 
 	token = &v3.Token{
 		ObjectMeta: v1.ObjectMeta{
-			Name:   input.TokenName,
-			Labels: labels,
+			Name: input.TokenName,
+			Labels: map[string]string{
+				tokens.UserIDLabel:    input.UserName,
+				tokens.TokenKindLabel: input.Kind,
+			},
 		},
 		TTLMillis:     0,
 		Description:   input.Description,
@@ -297,10 +290,10 @@ func (m *userManager) EnsureClusterToken(clusterName string, input user.TokenInp
 	}
 	err = tokens.ConvertTokenKeyToHash(token)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to convert token key to hash: %w", err)
+		return "", err
 	}
 
-	logrus.Infof("Creating token for user %s", input.UserName)
+	logrus.Infof("Creating token for user %v", input.UserName)
 	err = wait.ExponentialBackoff(backoff, func() (bool, error) {
 		// Backoff was added here because it is possible the token is in the process of deleting.
 		// This should cause the create to retry until the delete is finished.
@@ -315,10 +308,10 @@ func (m *userManager) EnsureClusterToken(clusterName string, input user.TokenInp
 		return true, nil
 	})
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	return token.Name + ":" + key, token, nil
+	return token.Name + ":" + key, nil
 }
 
 // newTokenForKubeconfig creates a new token for a generated kubeconfig.
@@ -339,12 +332,7 @@ func (m *userManager) newTokenForKubeconfig(clusterName, tokenName, description,
 		UserPrincipal: userPrincipal,
 	}
 
-	tokenKey, _, err := m.EnsureClusterToken(clusterName, input)
-	if err != nil {
-		return "", fmt.Errorf("failed to create token: %w", err)
-	}
-
-	return tokenKey, nil
+	return m.EnsureClusterToken(clusterName, input)
 }
 
 // GetKubeconfigToken creates a new token for use in a kubeconfig generated through the CLI.

@@ -6,10 +6,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rancher/norman/store/proxy"
 	"github.com/rancher/rancher/pkg/api/norman"
 	"github.com/rancher/rancher/pkg/auth/api"
 	"github.com/rancher/rancher/pkg/auth/data"
 	"github.com/rancher/rancher/pkg/auth/providerrefresh"
+	"github.com/rancher/rancher/pkg/auth/providers/common"
 	"github.com/rancher/rancher/pkg/auth/providers/publicapi"
 	"github.com/rancher/rancher/pkg/auth/providers/saml"
 	"github.com/rancher/rancher/pkg/auth/requests"
@@ -21,6 +23,7 @@ import (
 	steveauth "github.com/rancher/steve/pkg/auth"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/client-go/rest"
 )
 
 type Server struct {
@@ -47,8 +50,26 @@ func NewHeaderAuth() (*Server, error) {
 	}, nil
 }
 
-func NewServer(ctx context.Context, wContext *wrangler.Context, scaledContext *config.ScaledContext, authenticator requests.Authenticator) (*Server, error) {
-	authManagement, err := newAPIManagement(ctx, scaledContext)
+func NewServer(ctx context.Context, cfg *rest.Config, wContext *wrangler.Context) (*Server, error) {
+	sc, err := config.NewScaledContext(*cfg, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	sc.Wrangler = wContext
+
+	sc.UserManager, err = common.NewUserManagerNoBindings(sc)
+	if err != nil {
+		return nil, err
+	}
+
+	sc.ClientGetter, err = proxy.NewClientGetterFromConfig(*cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	authenticator := requests.NewAuthenticator(ctx, clusterrouter.GetClusterID, sc)
+	authManagement, err := newAPIManagement(ctx, sc)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +77,7 @@ func NewServer(ctx context.Context, wContext *wrangler.Context, scaledContext *c
 	return &Server{
 		Authenticator: requests.ToAuthMiddleware(authenticator),
 		Management:    authManagement,
-		scaledContext: scaledContext,
+		scaledContext: sc,
 	}, nil
 }
 

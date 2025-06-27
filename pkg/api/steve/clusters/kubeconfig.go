@@ -97,10 +97,5 @@ func (k kubeconfigDownload) ensureToken(userName string, req *http.Request) (str
 		UserPrincipal: authToken.GetUserPrincipal(),
 	}
 
-	tokenKey, _, err := k.userMgr.EnsureToken(input)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenKey, nil
+	return k.userMgr.EnsureToken(input)
 }

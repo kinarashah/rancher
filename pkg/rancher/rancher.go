@@ -13,7 +13,6 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	responsewriter "github.com/rancher/apiserver/pkg/middleware"
-	normanStoreProxy "github.com/rancher/norman/store/proxy"
 	"github.com/rancher/rancher/pkg/api/norman/customization/kontainerdriver"
 	steveapi "github.com/rancher/rancher/pkg/api/steve"
 	"github.com/rancher/rancher/pkg/api/steve/aggregation"
@@ -21,9 +20,7 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/auth"
 	"github.com/rancher/rancher/pkg/auth/audit"
-	"github.com/rancher/rancher/pkg/auth/providers/common"
 	"github.com/rancher/rancher/pkg/auth/requests"
-	"github.com/rancher/rancher/pkg/clusterrouter"
 	"github.com/rancher/rancher/pkg/controllers/dashboard"
 	"github.com/rancher/rancher/pkg/controllers/dashboard/apiservice"
 	"github.com/rancher/rancher/pkg/controllers/dashboard/plugin"
@@ -43,7 +40,6 @@ import (
 	"github.com/rancher/rancher/pkg/serviceaccounttoken"
 	"github.com/rancher/rancher/pkg/settings"
 	"github.com/rancher/rancher/pkg/tls"
-	"github.com/rancher/rancher/pkg/types/config"
 	"github.com/rancher/rancher/pkg/ui"
 	"github.com/rancher/rancher/pkg/websocket"
 	"github.com/rancher/rancher/pkg/wrangler"
@@ -200,26 +196,7 @@ func New(ctx context.Context, clientConfg clientcmd.ClientConfig, opts *Options)
 	}
 
 	if features.Auth.Enabled() {
-		sc, err := config.NewScaledContext(*restConfig, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		sc.Wrangler = wranglerContext
-
-		sc.UserManager, err = common.NewUserManagerNoBindings(wranglerContext)
-		if err != nil {
-			return nil, err
-		}
-
-		sc.ClientGetter, err = normanStoreProxy.NewClientGetterFromConfig(*restConfig)
-		if err != nil {
-			return nil, err
-		}
-
-		tokenAuthenticator := requests.NewAuthenticator(ctx, clusterrouter.GetClusterID, sc)
-
-		authServer, err = auth.NewServer(ctx, wranglerContext, sc, tokenAuthenticator)
+		authServer, err = auth.NewServer(ctx, restConfig, wranglerContext)
 		if err != nil {
 			return nil, err
 		}

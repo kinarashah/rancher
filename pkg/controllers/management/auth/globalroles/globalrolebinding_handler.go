@@ -11,6 +11,7 @@ import (
 	"github.com/rancher/rancher/pkg/clustermanager"
 	"github.com/rancher/rancher/pkg/controllers"
 	"github.com/rancher/rancher/pkg/controllers/status"
+	mgmtcontroller "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	mgmtv3 "github.com/rancher/rancher/pkg/generated/controllers/management.cattle.io/v3"
 	v3 "github.com/rancher/rancher/pkg/generated/norman/management.cattle.io/v3"
 	rbacv1 "github.com/rancher/rancher/pkg/generated/norman/rbac.authorization.k8s.io/v1"
@@ -121,7 +122,7 @@ type globalRoleBindingLifecycle struct {
 	crLister                rbacv1.ClusterRoleLister
 	crbClient               rbacv1.ClusterRoleBindingInterface
 	crbLister               rbacv1.ClusterRoleBindingLister
-	crtbCache               mgmtv3.ClusterRoleTemplateBindingCache
+	crtbCache               mgmtcontroller.ClusterRoleTemplateBindingCache
 	crtbClient              v3.ClusterRoleTemplateBindingInterface
 	grLister                v3.GlobalRoleLister
 	grbLister               mgmtv3.GlobalRoleBindingCache
