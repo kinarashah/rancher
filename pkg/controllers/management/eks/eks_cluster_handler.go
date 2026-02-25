@@ -104,7 +104,7 @@ func (e *eksOperatorController) onClusterChange(key string, cluster *mgmtv3.Clus
 		cluster = cluster.DeepCopy()
 		cluster.Status.Driver = apimgmtv3.ClusterDriverEKS
 		var err error
-		cluster, err = e.ClusterClient.Update(cluster)
+		cluster, err = e.ClusterClient.UpdateStatus(cluster)
 		if err != nil {
 			return cluster, err
 		}

@@ -83,7 +83,7 @@ func (e *aksOperatorController) onClusterChange(_ string, cluster *apimgmtv3.Clu
 	if cluster.Status.Driver == "" {
 		cluster = cluster.DeepCopy()
 		cluster.Status.Driver = apimgmtv3.ClusterDriverAKS
-		return e.ClusterClient.Update(cluster)
+		return e.ClusterClient.UpdateStatus(cluster)
 	}
 
 	cluster, err := e.CheckCrdReady(cluster, "aks")

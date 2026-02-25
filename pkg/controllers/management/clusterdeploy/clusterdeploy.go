@@ -104,12 +104,15 @@ func (cd *clusterDeploy) sync(key string, cluster *apimgmtv3.Cluster) (runtime.O
 
 	err = cd.doSync(cluster)
 	if cluster != nil && !reflect.DeepEqual(cluster, original) {
-		logrus.Tracef("clusterDeploy: sync: cluster changed, calling Update on cluster [%s]", cluster.Name)
 		_, updateErr = cd.clusters.Update(cluster)
 	}
 
 	if err != nil {
 		return nil, err
+	}
+
+	if cluster != nil && !reflect.DeepEqual(cluster.Status, original.Status) {
+		_, updateErr = cd.clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 	}
 	return nil, updateErr
 }
@@ -144,13 +147,14 @@ func (cd *clusterDeploy) doSync(cluster *apimgmtv3.Cluster) error {
 		return nil
 	}
 
-	_, err = apimgmtv3.ClusterConditionSystemAccountCreated.DoUntilTrue(cluster, func() (runtime.Object, error) {
-		logrus.Tracef("clusterDeploy: doSync: Creating SystemAccount for cluster [%s]", cluster.Name)
+	obj, err := apimgmtv3.ClusterConditionSystemAccountCreated.DoUntilTrue(cluster, func() (runtime.Object, error) {
+		logrus.Infof("clusterDeploy: doSync: Creating SystemAccount for cluster [%s]", cluster.Name)
 		return cluster, cd.systemAccountManager.CreateSystemAccount(cluster)
 	})
 	if err != nil {
 		return err
 	}
+	cluster = obj.(*apimgmtv3.Cluster)
 
 	if cluster.Status.AgentImage != "" && !agentImagesCached(cluster.Name) {
 		if err := cd.cacheAgentImages(cluster.Name); err != nil {

@@ -306,7 +306,11 @@ func (p *Provisioner) update(cluster *apimgmtv3.Cluster, create bool) (*apimgmtv
 	if err != nil {
 		return cluster, err
 	}
-
+	updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+	if err != nil {
+		return cluster, err
+	}
+	cluster = updatedCluster.(*apimgmtv3.Cluster)
 	return cluster, nil
 }
 
@@ -334,7 +338,6 @@ func (p *Provisioner) Create(cluster *apimgmtv3.Cluster) (runtime.Object, error)
 			apimgmtv3.ClusterConditionWaiting.Message(cluster, "Waiting for API to be available")
 		}
 	}
-
 	cluster, err = p.pending(cluster)
 	if err != nil {
 		return cluster, err
@@ -359,16 +362,18 @@ func (p *Provisioner) pending(cluster *apimgmtv3.Cluster) (*apimgmtv3.Cluster, e
 	if err != nil {
 		return cluster, err
 	}
-
 	if driver == "" {
 		return cluster, &controller.ForgetError{
 			Err:    fmt.Errorf("waiting for full cluster configuration"),
 			Reason: "Pending"}
 	}
-
 	if driver != cluster.Status.Driver {
 		cluster.Status.Driver = driver
-		return p.Clusters.Update(cluster)
+		obj, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if err != nil {
+			return nil, err
+		}
+		return obj.(*apimgmtv3.Cluster), nil
 	}
 
 	return cluster, nil
@@ -426,11 +431,12 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 		cluster.Status.ServiceAccountToken = ""
 		apimgmtv3.ClusterConditionServiceAccountMigrated.True(cluster)
 
-		// Update the cluster in k8s
-		cluster, err = p.Clusters.Update(cluster)
+		// Update the cluster status in k8s
+		obj, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 		if err != nil {
 			return nil, err
 		}
+		cluster = obj.(*apimgmtv3.Cluster)
 
 		err = p.removeLegacyServiceAccount(cluster, *spec)
 		if err != nil {
@@ -468,10 +474,11 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 
 		// Attempt to manually trigger updating, otherwise it will not be triggered until after exiting reconcile
 		apimgmtv3.ClusterConditionUpdated.Unknown(cluster)
-		cluster, err = p.Clusters.Update(cluster)
+		obj, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 		if err != nil {
 			return cluster, fmt.Errorf("[reconcileCluster] Failed to update cluster [%s]: %v", cluster.Name, err)
 		}
+		cluster = obj.(*apimgmtv3.Cluster)
 
 		apiEndpoint, serviceAccountToken, caCert, _, err = p.driverUpdate(cluster, *spec)
 	}
@@ -520,7 +527,9 @@ func (p *Provisioner) reconcileCluster(cluster *apimgmtv3.Cluster, create bool) 
 		cluster.Status.ServiceAccountToken = ""
 		cluster.Status.CACert = caCert
 
-		if cluster, err = p.Clusters.Update(cluster); err == nil {
+		obj, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if err == nil {
+			cluster = obj.(*apimgmtv3.Cluster)
 			saved = true
 			break
 		} else {
@@ -709,14 +718,21 @@ func (p *Provisioner) recordFailure(cluster *apimgmtv3.Cluster, spec apimgmtv3.C
 		}
 
 		cluster.Status.FailedSpec = nil
-		return p.Clusters.Update(cluster)
+		obj, updateErr := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if updateErr != nil {
+			return cluster, updateErr
+		}
+		return obj.(*apimgmtv3.Cluster), nil
 	}
 
 	p.backoff.Next(cluster.Name, time.Now())
 	cluster.Status.FailedSpec = &spec
-	newCluster, _ := p.Clusters.Update(cluster)
+	obj, _ := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 	// mask the error
-	return newCluster, nil
+	if obj != nil {
+		return obj.(*apimgmtv3.Cluster), nil
+	}
+	return cluster, nil
 }
 
 // transform an imported cluster into a k3s or k3os cluster using its discovered version

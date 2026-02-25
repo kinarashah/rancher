@@ -501,9 +501,9 @@ func (r *Rancher) Start(ctx context.Context) error {
 
 	r.auditLog.Start(ctx)
 
-	if utils.IsMCMServerOnly() {
-		r.startTelemetryManager(context.TODO())
-	}
+	//if utils.IsMCMServerOnly() {
+	//	r.startTelemetryManager(context.TODO())
+	//}
 	return r.Wrangler.Start(ctx)
 }
 

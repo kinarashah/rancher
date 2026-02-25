@@ -195,7 +195,8 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 				logrus.Tracef("[secretmigrator] service account token secret found for cluster %s", clusterCopy.Name)
 				clusterCopy.Status.ServiceAccountTokenSecret = saSecret.Name
 				clusterCopy.Status.ServiceAccountToken = ""
-				clusterCopy, err = h.clusters.Update(clusterCopy)
+				// Use UpdateStatus since we're only changing status fields
+				updatedObj, err := h.clusters.ObjectClient().UpdateStatus(clusterCopy.Name, clusterCopy)
 				if err != nil {
 					logrus.Errorf("[secretmigrator] failed to migrate service account token secret for cluster %s, will retry: %v", cluster.Name, err)
 					deleteErr := h.migrator.secrets.DeleteNamespaced(SecretNamespace, saSecret.Name, &metav1.DeleteOptions{})
@@ -204,6 +205,7 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 					}
 					return cluster, err
 				}
+				clusterCopy = updatedObj.(*apimgmtv3.Cluster)
 				cluster = clusterCopy
 			}
 		}
@@ -212,11 +214,11 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 	logrus.Tracef("[secretmigrator] setting cluster condition [%s] and updating cluster [%s]", apimgmtv3.ClusterConditionServiceAccountSecretsMigrated, clusterCopy.Name)
 	// this is done for safety, but obj should never be nil as long as the object passed into DoUntilTrue() is not nil
 	clusterCopy, _ = obj.(*apimgmtv3.Cluster)
-	var err error
-	clusterCopy, err = h.clusters.Update(clusterCopy)
+	// Use UpdateStatus since DoUntilTrue sets a condition (status field)
+	updatedObj, err := h.clusters.ObjectClient().UpdateStatus(clusterCopy.Name, clusterCopy)
 	if err != nil {
 		return cluster, err
 	}
-	cluster = clusterCopy.DeepCopy()
+	cluster = updatedObj.(*apimgmtv3.Cluster).DeepCopy()
 	return cluster, doErr
 }
