@@ -292,7 +292,13 @@ func (c *clusterRefreshController) updateCluster(cluster *mgmtv3.Cluster) (*mgmt
 	// Update the cluster refresh time.
 	cluster.Annotations[clusterLastRefreshTime] = strconv.FormatInt(time.Now().Unix(), 10)
 
-	return c.clusterClient.Update(cluster)
+	// Update spec and annotations first
+	cluster, err := c.clusterClient.Update(cluster)
+	if err != nil {
+		return cluster, err
+	}
+	// Then update status (conditions, UpstreamSpec, etc.)
+	return c.clusterClient.UpdateStatus(cluster)
 }
 
 func getComparableUpstreamSpec(secretsCache wranglerv1.SecretCache, secretClient wranglerv1.SecretClient, cluster *mgmtv3.Cluster) (*clusterConfig, error) {

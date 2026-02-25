@@ -74,5 +74,11 @@ func (h *handler) OnChange(key string, cluster *v3.Cluster) (*v3.Cluster, error)
 	}
 	cluster.Labels[ProviderKey] = provider
 	cluster.Status.Provider = provider
-	return h.clusters.Update(cluster)
+	// Update labels first (metadata change)
+	cluster, err = h.clusters.Update(cluster)
+	if err != nil {
+		return cluster, err
+	}
+	// Then update status
+	return h.clusters.UpdateStatus(cluster)
 }
