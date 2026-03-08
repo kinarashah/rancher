@@ -106,7 +106,7 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 	if obj != nil && !reflect.DeepEqual(orig, obj) {
 		logrus.Infof("[%s] Updating cluster %s", ClusterCreateController, orig.Name)
 		cluster := obj.(*apisv3.Cluster)
-		_, err = l.clusterClient.UpdateStatus(cluster)
+		_, err = l.clusterClient.Update(cluster)
 		if err != nil {
 			return nil, err
 		}
@@ -124,9 +124,9 @@ func (l *clusterLifecycle) Sync(key string, orig *apisv3.Cluster) (runtime.Objec
 	}
 
 	// update if it has changed
-	if obj != nil && !reflect.DeepEqual(orig, obj) {
+	cluster := obj.(*apisv3.Cluster)
+	if obj != nil && !reflect.DeepEqual(orig.Status, cluster.Status) {
 		logrus.Infof("[%s] Updating cluster %s", ClusterCreateController, orig.Name)
-		cluster := obj.(*apisv3.Cluster)
 		_, err = l.clusterClient.UpdateStatus(cluster)
 		if err != nil {
 			return nil, err

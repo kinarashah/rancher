@@ -295,6 +295,11 @@ func (p *Provisioner) update(cluster *apimgmtv3.Cluster, create bool) (*apimgmtv
 	apimgmtv3.ClusterConditionProvisioned.Reason(cluster, "")
 	apimgmtv3.ClusterConditionPending.True(cluster)
 
+	updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+	if err != nil {
+		return cluster, err
+	}
+	cluster = updatedCluster.(*apimgmtv3.Cluster)
 	if cluster.Spec.GenericEngineConfig != nil {
 		return cluster, nil
 	}
@@ -306,7 +311,7 @@ func (p *Provisioner) update(cluster *apimgmtv3.Cluster, create bool) (*apimgmtv
 	if err != nil {
 		return cluster, err
 	}
-	updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+	updatedCluster, err = p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 	if err != nil {
 		return cluster, err
 	}
@@ -743,6 +748,7 @@ func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []
 			Err:    fmt.Errorf("waiting for full cluster configuration"),
 			Reason: "Pending"}
 	}
+
 	if cluster.Status.Driver == apimgmtv3.ClusterDriverK3s ||
 		cluster.Status.Driver == apimgmtv3.ClusterDriverK3os ||
 		cluster.Status.Driver == apimgmtv3.ClusterDriverRke2 ||
