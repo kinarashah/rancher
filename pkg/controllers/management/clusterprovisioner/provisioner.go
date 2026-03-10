@@ -122,8 +122,10 @@ func (p *Provisioner) Updated(cluster *apimgmtv3.Cluster) (runtime.Object, error
 
 	if imported.IsAdministratedByProvisioningCluster(cluster) {
 		reconcileACE(cluster)
-		return p.Clusters.Update(cluster)
+		return p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 	}
+
+	originalStatus := cluster.Status.DeepCopy()
 
 	obj, err := apimgmtv3.ClusterConditionUpdated.Do(cluster, func() (runtime.Object, error) {
 		anno, _ := cluster.Annotations[KontainerEngineUpdate]
@@ -153,7 +155,22 @@ func (p *Provisioner) Updated(cluster *apimgmtv3.Cluster) (runtime.Object, error
 		return nil, nil
 	})
 
-	return obj.(*apimgmtv3.Cluster), err
+	if err != nil {
+		return cluster, err
+	}
+
+	updated := obj.(*apimgmtv3.Cluster)
+	
+	if updated != nil && !reflect.DeepEqual(originalStatus.Conditions, updated.Status.Conditions) {
+		// reflect ClusterConditionUpdated status on the cluster conditions
+		obj, err = p.Clusters.ObjectClient().UpdateStatus(updated.Name, updated)
+		if err != nil {
+			return updated, err
+		}
+		updated = obj.(*apimgmtv3.Cluster)
+	}
+
+	return updated, err
 }
 
 // waitForSchema waits for the driver and schema to be populated for the cluster
@@ -290,16 +307,19 @@ func (p *Provisioner) update(cluster *apimgmtv3.Cluster, create bool) (*apimgmtv
 		return cluster, err
 	}
 
-	apimgmtv3.ClusterConditionProvisioned.True(cluster)
-	apimgmtv3.ClusterConditionProvisioned.Message(cluster, "")
-	apimgmtv3.ClusterConditionProvisioned.Reason(cluster, "")
-	apimgmtv3.ClusterConditionPending.True(cluster)
+	if !apimgmtv3.ClusterConditionProvisioned.IsTrue(cluster) || !apimgmtv3.ClusterConditionPending.IsTrue(cluster) {
+		apimgmtv3.ClusterConditionProvisioned.True(cluster)
+		apimgmtv3.ClusterConditionProvisioned.Message(cluster, "")
+		apimgmtv3.ClusterConditionProvisioned.Reason(cluster, "")
+		apimgmtv3.ClusterConditionPending.True(cluster)
 
-	updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
-	if err != nil {
-		return cluster, err
+		updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if err != nil {
+			return cluster, err
+		}
+		cluster = updatedCluster.(*apimgmtv3.Cluster)
 	}
-	cluster = updatedCluster.(*apimgmtv3.Cluster)
+
 	if cluster.Spec.GenericEngineConfig != nil {
 		return cluster, nil
 	}
@@ -307,15 +327,19 @@ func (p *Provisioner) update(cluster *apimgmtv3.Cluster, create bool) (*apimgmtv
 	if err != nil {
 		return cluster, err
 	}
-	err = p.k3sBasedClusterConfig(cluster, nodes)
+
+	toUpdate, err := p.k3sBasedClusterConfig(cluster, nodes)
 	if err != nil {
 		return cluster, err
 	}
-	updatedCluster, err = p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
-	if err != nil {
-		return cluster, err
+
+	if toUpdate {
+		updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if err != nil {
+			return cluster, err
+		}
+		cluster = updatedCluster.(*apimgmtv3.Cluster)
 	}
-	cluster = updatedCluster.(*apimgmtv3.Cluster)
 	return cluster, nil
 }
 
@@ -741,10 +765,10 @@ func (p *Provisioner) recordFailure(cluster *apimgmtv3.Cluster, spec apimgmtv3.C
 }
 
 // transform an imported cluster into a k3s or k3os cluster using its discovered version
-func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []*apimgmtv3.Node) error {
+func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []*apimgmtv3.Node) (bool, error) {
 	// version is not found until cluster is provisioned
 	if cluster.Status.Driver == "" || cluster.Status.Version == nil || len(nodes) == 0 {
-		return &controller.ForgetError{
+		return false, &controller.ForgetError{
 			Err:    fmt.Errorf("waiting for full cluster configuration"),
 			Reason: "Pending"}
 	}
@@ -754,9 +778,10 @@ func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []
 		cluster.Status.Driver == apimgmtv3.ClusterDriverRke2 ||
 		cluster.Status.Driver == apimgmtv3.ClusterDriverRancherD ||
 		imported.IsAdministratedByProvisioningCluster(cluster) {
-		return nil // no-op
+		return false, nil // no-op
 	}
 	isEmbedded := cluster.Status.Driver == apimgmtv3.ClusterDriverLocal
+	driver := cluster.Status.Driver
 
 	if strings.Contains(cluster.Status.Version.String(), "k3s") {
 		for _, node := range nodes {
@@ -781,10 +806,10 @@ func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []
 		if apierrors.IsNotFound(err) {
 			cluster.Status.Driver = apimgmtv3.ClusterDriverRke2
 		} else if err != nil {
-			return err
+			return false, err
 		} else {
 			cluster.Status.Driver = apimgmtv3.ClusterDriverRancherD
-			return nil
+			return driver == cluster.Status.Driver, nil
 		}
 		if cluster.Spec.Rke2Config == nil {
 			cluster.Spec.Rke2Config = &apimgmtv3.Rke2Config{
@@ -793,7 +818,7 @@ func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []
 			cluster.Spec.Rke2Config.SetStrategy(1, 1)
 		}
 	}
-	return nil
+	return driver == cluster.Status.Driver, nil
 }
 
 func reconcileACE(cluster *apimgmtv3.Cluster) {

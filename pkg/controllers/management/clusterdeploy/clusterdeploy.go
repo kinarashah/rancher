@@ -103,17 +103,33 @@ func (cd *clusterDeploy) sync(key string, cluster *apimgmtv3.Cluster) (runtime.O
 	cluster = original.DeepCopy()
 
 	err = cd.doSync(cluster)
-	if cluster != nil && !reflect.DeepEqual(cluster, original) {
-		_, updateErr = cd.clusters.Update(cluster)
+
+	var desiredStatus *apimgmtv3.ClusterStatus
+	if !reflect.DeepEqual(cluster.Status, original.Status) {
+		desiredStatus = cluster.Status.DeepCopy()
+	}
+
+	if cluster != nil && (!reflect.DeepEqual(cluster.Spec, original.Spec) || !reflect.DeepEqual(cluster.ObjectMeta, original.ObjectMeta)) {
+		updated, updateErr := cd.clusters.Update(cluster)
+		if updateErr != nil {
+			if err != nil {
+				return nil, err
+			}
+			return nil, updateErr
+		}
+		cluster = updated
+	}
+
+	// handle status using updated cluster with latest resource version
+	if cluster != nil && desiredStatus != nil {
+		cluster.Status = *desiredStatus
+		_, updateErr = cd.clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	if cluster != nil && !reflect.DeepEqual(cluster.Status, original.Status) {
-		_, updateErr = cd.clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
-	}
 	return nil, updateErr
 }
 

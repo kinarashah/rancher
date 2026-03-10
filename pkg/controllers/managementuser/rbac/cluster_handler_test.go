@@ -281,11 +281,12 @@ func TestClusterHandlerSync(t *testing.T) {
 }
 
 type testMocks struct {
-	t           *testing.T
-	mockCluster *MockClusterInterface
-	mockInt     *fake.MockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]
-	mockLister  *fake.MockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding]
-	mockCache   cache.Indexer
+	t            *testing.T
+	mockCluster2 *fake.MockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList]
+	mockCluster  *MockClusterInterface
+	mockInt      *fake.MockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]
+	mockLister   *fake.MockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding]
+	mockCache    cache.Indexer
 }
 
 func newMocks(t *testing.T) *testMocks {
@@ -297,10 +298,11 @@ func newMocks(t *testing.T) *testMocks {
 	mockIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	mockIndexer.AddIndexers(indexers)
 	return &testMocks{
-		t:           t,
-		mockCluster: NewMockClusterInterface(ctrl),
-		mockInt:     fake.NewMockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList](ctrl),
-		mockLister:  fake.NewMockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding](ctrl),
-		mockCache:   mockIndexer,
+		t:            t,
+		mockCluster2: fake.NewMockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList](ctrl),
+		mockCluster:  NewMockClusterInterface(ctrl),
+		mockInt:      fake.NewMockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList](ctrl),
+		mockLister:   fake.NewMockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding](ctrl),
+		mockCache:    mockIndexer,
 	}
 }
