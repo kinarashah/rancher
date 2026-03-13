@@ -121,8 +121,10 @@ func (p *Provisioner) Updated(cluster *apimgmtv3.Cluster) (runtime.Object, error
 	}
 
 	if imported.IsAdministratedByProvisioningCluster(cluster) {
-		reconcileACE(cluster)
-		return p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if reconcileACE(cluster) {
+			return p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		}
+		return cluster, nil
 	}
 
 	originalStatus := cluster.Status.DeepCopy()
@@ -160,7 +162,7 @@ func (p *Provisioner) Updated(cluster *apimgmtv3.Cluster) (runtime.Object, error
 	}
 
 	updated := obj.(*apimgmtv3.Cluster)
-	
+
 	if updated != nil && !reflect.DeepEqual(originalStatus.Conditions, updated.Status.Conditions) {
 		// reflect ClusterConditionUpdated status on the cluster conditions
 		obj, err = p.Clusters.ObjectClient().UpdateStatus(updated.Name, updated)
@@ -821,8 +823,12 @@ func (p *Provisioner) k3sBasedClusterConfig(cluster *apimgmtv3.Cluster, nodes []
 	return driver == cluster.Status.Driver, nil
 }
 
-func reconcileACE(cluster *apimgmtv3.Cluster) {
+func reconcileACE(cluster *apimgmtv3.Cluster) bool {
 	if imported.IsAdministratedByProvisioningCluster(cluster) || cluster.Status.Driver == apimgmtv3.ClusterDriverRke2 || cluster.Status.Driver == apimgmtv3.ClusterDriverK3s {
-		cluster.Status.AppliedSpec.LocalClusterAuthEndpoint = cluster.Spec.LocalClusterAuthEndpoint
+		if cluster.Status.AppliedSpec.LocalClusterAuthEndpoint != cluster.Spec.LocalClusterAuthEndpoint {
+			cluster.Status.AppliedSpec.LocalClusterAuthEndpoint = cluster.Spec.LocalClusterAuthEndpoint
+			return true
+		}
 	}
+	return false
 }

@@ -367,11 +367,13 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 			if !useRKEControlPlaneReadyStatus {
 				reconcileCondition(&status, capr.Ready, mgmtCluster, capr.Ready)
 			}
-			reconcileCondition(mgmtCluster, capr.Updated, rkeCP, capr.Ready)
-			reconcileCondition(mgmtCluster, capr.Provisioned, rkeCP, capr.Provisioned) // This was originally set by checking machine provisioning, but now we simply set it to true.
-			_, err := h.mgmtClusterClient.UpdateStatus(mgmtCluster)
-			if err != nil {
-				return nil, status, err
+			updatedChanged := reconcileCondition(mgmtCluster, capr.Updated, rkeCP, capr.Ready)
+			provisionedChanged := reconcileCondition(mgmtCluster, capr.Provisioned, rkeCP, capr.Provisioned) // This was originally set by checking machine provisioning, but now we simply set it to true.
+			if updatedChanged || provisionedChanged {
+				_, err := h.mgmtClusterClient.UpdateStatus(mgmtCluster)
+				if err != nil {
+					return nil, status, err
+				}
 			}
 		}
 	}

@@ -54,7 +54,7 @@ func TestClusterHandlerSync(t *testing.T) {
 				m.mockCache.Add(testGrbs[0])
 				m.mockLister.EXPECT().Get(rbac.GrbCRBName(testGrbs[0])).Return(nil, errNotFound)
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, nil).Times(1)
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -71,7 +71,7 @@ func TestClusterHandlerSync(t *testing.T) {
 				m.mockCache.Add(testGrbs[0])
 				m.mockLister.EXPECT().Get(rbac.GrbCRBName(testGrbs[0])).Return(nil, errNotFound)
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, nil).Times(1)
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -101,7 +101,7 @@ func TestClusterHandlerSync(t *testing.T) {
 
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, nil).Times(3)
 
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -124,7 +124,7 @@ func TestClusterHandlerSync(t *testing.T) {
 
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, nil).Times(2)
 
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -149,7 +149,7 @@ func TestClusterHandlerSync(t *testing.T) {
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, errAlreadyExist)
 				m.mockInt.EXPECT().Create(gomock.Any()).Return(nil, nil)
 
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -163,7 +163,7 @@ func TestClusterHandlerSync(t *testing.T) {
 			key:         falseCluster.Name,
 			cluster:     falseCluster.DeepCopy(),
 			setup: func(m *testMocks) {
-				m.mockCluster.EXPECT().Update(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
+				m.mockCluster.EXPECT().UpdateStatus(gomock.Any()).DoAndReturn(func(cluster *v32.Cluster) (*v32.Cluster, error) {
 					require.Len(m.t, cluster.Status.Conditions, 1)
 					require.Equal(m.t, string(v32.ClusterConditionGlobalAdminsSynced), string(cluster.Status.Conditions[0].Type), "incorrect condition set")
 					require.Equal(m.t, "True", string(cluster.Status.Conditions[0].Status), "expected true condition to be set")
@@ -281,12 +281,11 @@ func TestClusterHandlerSync(t *testing.T) {
 }
 
 type testMocks struct {
-	t            *testing.T
-	mockCluster2 *fake.MockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList]
-	mockCluster  *MockClusterInterface
-	mockInt      *fake.MockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]
-	mockLister   *fake.MockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding]
-	mockCache    cache.Indexer
+	t           *testing.T
+	mockCluster *fake.MockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList]
+	mockInt     *fake.MockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList]
+	mockLister  *fake.MockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding]
+	mockCache   cache.Indexer
 }
 
 func newMocks(t *testing.T) *testMocks {
@@ -298,11 +297,10 @@ func newMocks(t *testing.T) *testMocks {
 	mockIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	mockIndexer.AddIndexers(indexers)
 	return &testMocks{
-		t:            t,
-		mockCluster2: fake.NewMockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList](ctrl),
-		mockCluster:  NewMockClusterInterface(ctrl),
-		mockInt:      fake.NewMockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList](ctrl),
-		mockLister:   fake.NewMockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding](ctrl),
-		mockCache:    mockIndexer,
+		t:           t,
+		mockCluster: fake.NewMockNonNamespacedClientInterface[*v32.Cluster, *v32.ClusterList](ctrl),
+		mockInt:     fake.NewMockNonNamespacedControllerInterface[*rbacv1.ClusterRoleBinding, *rbacv1.ClusterRoleBindingList](ctrl),
+		mockLister:  fake.NewMockNonNamespacedCacheInterface[*rbacv1.ClusterRoleBinding](ctrl),
+		mockCache:   mockIndexer,
 	}
 }

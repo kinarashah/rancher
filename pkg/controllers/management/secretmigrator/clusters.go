@@ -25,7 +25,7 @@ const (
 	SecretKey       = "credential"
 )
 
-func (h *handler) sync(_ string, cluster *apimgmtv3.Cluster) (runtime.Object, error) {
+func (h *handler) sync(_ string, cluster *apimgmtv3.Cluster) (*apimgmtv3.Cluster, error) {
 	if cluster == nil || cluster.DeletionTimestamp != nil {
 		return cluster, nil
 	}
@@ -196,7 +196,7 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 				clusterCopy.Status.ServiceAccountTokenSecret = saSecret.Name
 				clusterCopy.Status.ServiceAccountToken = ""
 				// Use UpdateStatus since we're only changing status fields
-				updatedObj, err := h.clusters.ObjectClient().UpdateStatus(clusterCopy.Name, clusterCopy)
+				updatedCluster, err := h.clusters.UpdateStatus(clusterCopy)
 				if err != nil {
 					logrus.Errorf("[secretmigrator] failed to migrate service account token secret for cluster %s, will retry: %v", cluster.Name, err)
 					deleteErr := h.migrator.secrets.DeleteNamespaced(SecretNamespace, saSecret.Name, &metav1.DeleteOptions{})
@@ -205,7 +205,7 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 					}
 					return cluster, err
 				}
-				clusterCopy = updatedObj.(*apimgmtv3.Cluster)
+				clusterCopy = updatedCluster
 				cluster = clusterCopy
 			}
 		}
@@ -215,10 +215,10 @@ func (h *handler) migrateServiceAccountSecrets(cluster *apimgmtv3.Cluster) (*api
 	// this is done for safety, but obj should never be nil as long as the object passed into DoUntilTrue() is not nil
 	clusterCopy, _ = obj.(*apimgmtv3.Cluster)
 	// Use UpdateStatus since DoUntilTrue sets a condition (status field)
-	updatedObj, err := h.clusters.ObjectClient().UpdateStatus(clusterCopy.Name, clusterCopy)
+	updatedCluster, err := h.clusters.UpdateStatus(clusterCopy)
 	if err != nil {
 		return cluster, err
 	}
-	cluster = updatedObj.(*apimgmtv3.Cluster).DeepCopy()
+	cluster = updatedCluster.DeepCopy()
 	return cluster, doErr
 }
