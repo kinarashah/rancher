@@ -121,8 +121,6 @@ func (c *checker) updateClusterConnectedCondition(cluster *v3.Cluster, connected
 		return fmt.Errorf("cluster cannot be nil")
 	}
 	for i := 0; i < 3; i++ {
-		// Fetch the latest cluster from the API server to avoid overwriting conditions
-		// set by other controllers (e.g., NoDiskPressure, NoMemoryPressure from statsaggregator)
 		latestCluster, err := c.clusters.Get(cluster.Name, metav1.GetOptions{})
 		if err != nil {
 			return err

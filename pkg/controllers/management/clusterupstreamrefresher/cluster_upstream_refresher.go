@@ -289,15 +289,14 @@ func (c *clusterRefreshController) updateCluster(cluster *mgmtv3.Cluster) (*mgmt
 	if cluster.Annotations == nil {
 		cluster.Annotations = make(map[string]string)
 	}
-	// Update the cluster refresh time.
 	cluster.Annotations[clusterLastRefreshTime] = strconv.FormatInt(time.Now().Unix(), 10)
-
-	// Update spec and annotations first
+	// Save status before Update() wipes it
+	statusCopy := cluster.Status.DeepCopy()
 	cluster, err := c.clusterClient.Update(cluster)
 	if err != nil {
 		return cluster, err
 	}
-	// Then update status (conditions, UpstreamSpec, etc.)
+	cluster.Status = *statusCopy
 	return c.clusterClient.UpdateStatus(cluster)
 }
 

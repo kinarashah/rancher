@@ -358,6 +358,7 @@ func (p *Provisioner) Create(cluster *apimgmtv3.Cluster) (runtime.Object, error)
 		return cluster, nil
 	}
 
+	originalConditions := cluster.Status.Conditions
 	var err error
 	// Initialize conditions, be careful to not continually update them
 	apimgmtv3.ClusterConditionPending.CreateUnknownIfNotExists(cluster)
@@ -369,6 +370,15 @@ func (p *Provisioner) Create(cluster *apimgmtv3.Cluster) (runtime.Object, error)
 			apimgmtv3.ClusterConditionWaiting.Message(cluster, "Waiting for API to be available")
 		}
 	}
+
+	if !reflect.DeepEqual(originalConditions, cluster.Status.Conditions) {
+		updatedCluster, err := p.Clusters.ObjectClient().UpdateStatus(cluster.Name, cluster)
+		if err != nil {
+			return cluster, err
+		}
+		cluster = updatedCluster.(*apimgmtv3.Cluster)
+	}
+
 	cluster, err = p.pending(cluster)
 	if err != nil {
 		return cluster, err
