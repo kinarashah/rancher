@@ -158,9 +158,7 @@ func (h *handler) OnChange(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPla
 	capr.Ready.True(&status)
 	capr.Ready.Message(&status, "")
 	capr.Ready.Reason(&status, "")
-	capr.Stable.True(&status)
-	capr.Stable.Message(&status, "")
-	capr.Stable.Reason(&status, "")
+	// Stable condition no longer used - ControlPlaneReady on MCIC now serves as the gate
 	status.AppliedSpec = &cp.Spec
 	capr.Reconciled.True(&status)
 	capr.Reconciled.Message(&status, "")

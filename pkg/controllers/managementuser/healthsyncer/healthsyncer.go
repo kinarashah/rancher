@@ -164,6 +164,13 @@ func (h *HealthSyncer) updateClusterHealth() error {
 		return nil
 	}
 
+	// For v2prov clusters, skip writing Ready when ControlPlaneReady is not True - provisioning controller owns Ready during that phase
+	isV2Prov := cluster.Status.Driver == v32.ClusterDriverRke2 || cluster.Status.Driver == v32.ClusterDriverK3s
+	if isV2Prov && !v32.ClusterConditionControlPlaneReady.IsTrue(cluster) {
+		logrus.Debugf("Skip updating cluster condition ready - cluster [%s] control plane not ready yet, provisioning controller owns Ready", h.clusterName)
+		return nil
+	}
+
 	newObj, err := v32.ClusterConditionReady.Do(cluster, func() (runtime.Object, error) {
 		for i := 0; ; i++ {
 			err := h.getComponentStatus(cluster)

@@ -284,10 +284,7 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 
 	// Check for cluster sanity to ensure we can properly deliver plans to this cluster.
 	if !clusterIsSane(plan) {
-		// Set the Stable condition on the controlplane to False. This will be used to indicate that the Ready condition
-		// on the v1 cluster object should be set from the rkecontrolplane Provisioned condition rather than the v3
-		// cluster objects Ready condition.
-		capr.Stable.False(&status)
+		// Stable condition no longer used - ControlPlaneReady on MCIC now serves as the gate
 
 		// Set the `initialization.controlPlaneInitialized` status fields on the status to false, as the cluster is not sane and cannot
 		// be considered initialized. This is to also prevent CAPI from setting the ControlPlaneInitialized condition
@@ -349,8 +346,7 @@ func (p *Planner) Process(cp *rkev1.RKEControlPlane, status rkev1.RKEControlPlan
 	// delivered to any etcd nodes, don't proceed with electing a new init node.
 	// The only way out of this is to restore an etcd snapshot.
 	if (capr.Bootstrapped.IsTrue(&status) || len(collect(plan, roleOr(hasJoinURL, hasJoinedTo))) != 0) && len(collect(plan, roleAnd(isEtcd, anyPlanDataExists))) == 0 {
-		// deliver an etcd snapshot list command to the etcd nodes.
-		capr.Stable.False(&status) // Set the Stable condition on the controlplane to False. This will be used to hide the v3.Cluster Ready condition from the UI.
+		// Stable condition no longer used - ControlPlaneReady on MCIC now serves as the gate
 		return status, errWaiting("rkecontrolplane was already initialized but no etcd machines exist that have plans, indicating the etcd plane has been entirely replaced. Restoration from etcd snapshot is required.")
 	}
 

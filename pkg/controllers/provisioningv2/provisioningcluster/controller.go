@@ -353,20 +353,23 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 		reconcileCondition(&status, capr.Updated, rkeCP, capr.Ready)
 		reconcileCondition(&status, capr.Provisioned, rkeCP, capr.Ready)
 
-		// If the Stable condition is not true, then copy the Ready condition from the rkeControlPlane to the v1.Clusters object
-		// Otherwise, use the v3 clusters Ready condition. Note that we use `IsTrue` here because `IsFalse` specifically looks
-		// for `False`, and the condition may not be defined which would not match `IsFalse`.
-		useRKEControlPlaneReadyStatus := !capr.Stable.IsTrue(rkeCP)
-		if useRKEControlPlaneReadyStatus {
-			reconcileCondition(&status, capr.Ready, rkeCP, capr.Ready)
-		}
 		if mgmtCluster != nil {
-			if !useRKEControlPlaneReadyStatus {
-				reconcileCondition(&status, capr.Ready, mgmtCluster, capr.Ready)
+			// Always write ControlPlaneReady to MCIC from RKEControlPlane's Ready condition
+			controlPlaneReadyCond := condition.Cond(apimgmtv3.ClusterConditionControlPlaneReady)
+			controlPlaneReadyChanged := reconcileCondition(mgmtCluster, controlPlaneReadyCond, rkeCP, capr.Ready)
+
+			// When ControlPlaneReady is not True, write Ready on MCIC from planner state (RKEControlPlane Ready)
+			// When ControlPlaneReady is True, HealthSyncer will write Ready from health checks
+			readyChanged := false
+			if !apimgmtv3.ClusterConditionControlPlaneReady.IsTrue(mgmtCluster) {
+				readyCond := condition.Cond(apimgmtv3.ClusterConditionReady)
+				readyChanged = reconcileCondition(mgmtCluster, readyCond, rkeCP, capr.Ready)
 			}
+
 			updatedChanged := reconcileCondition(mgmtCluster, capr.Updated, rkeCP, capr.Ready)
-			provisionedChanged := reconcileCondition(mgmtCluster, capr.Provisioned, rkeCP, capr.Provisioned) // This was originally set by checking machine provisioning, but now we simply set it to true.
-			if updatedChanged || provisionedChanged {
+			provisionedChanged := reconcileCondition(mgmtCluster, capr.Provisioned, rkeCP, capr.Provisioned)
+
+			if controlPlaneReadyChanged || readyChanged || updatedChanged || provisionedChanged {
 				_, err := h.mgmtClusterClient.UpdateStatus(mgmtCluster)
 				if err != nil {
 					return nil, status, err

@@ -28,7 +28,6 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/condition"
 	corecontrollers "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/rancher/wrangler/v3/pkg/generic"
-	"github.com/rancher/wrangler/v3/pkg/genericcondition"
 	"github.com/rancher/wrangler/v3/pkg/kstatus"
 	"github.com/rancher/wrangler/v3/pkg/name"
 	"github.com/rancher/wrangler/v3/pkg/randomtoken"
@@ -665,39 +664,12 @@ func (h *handler) updateStatus(objs []runtime.Object, cluster *v1.Cluster, statu
 	if err != nil && !apierror.IsNotFound(err) {
 		return nil, status, err
 	} else if err == nil {
+		// Read Ready from MCIC for the status.Ready boolean latch
 		if condition.Cond("Ready").IsTrue(existing) {
 			ready = true
 		}
-		for _, messageCond := range existing.Status.Conditions {
-			if messageCond.Type == "Updated" || messageCond.Type == "Provisioned" || messageCond.Type == "Removed" || (cluster.Spec.RKEConfig != nil && messageCond.Type == "Ready") {
-				// Don't copy these conditions from v3 management object to the v1 provisioning object. This is because we copy these specific conditions from other places and we need to prevent clobbering.
-				// Updated - This is copied from the rkecontrolplane Ready condition to the v1 object by the rke2/provisioningcluster/controller.go via the reconcile function
-				// Provisioned - This is copied from the rkecontrolplane Ready condition to the v1 object by the rke2/provisioningcluster/controller.go via the reconcile function
-				// Removed - This is copied from the rkecontrolplane Removed condition on rkecontrolplane deletion.
-				// Ready - Conditionally, if RKEConfig != nil. This is copied from the rkecontrolplane Ready condition (if cluster is not stable) or v3/management cluster Ready condition (if cluster is stable) by the rke2/provisioningcluster/controller.go via the reconcile function
-				continue
-			}
-
-			found := false
-			newCond := genericcondition.GenericCondition{
-				Type:               string(messageCond.Type),
-				Status:             messageCond.Status,
-				LastUpdateTime:     messageCond.LastUpdateTime,
-				LastTransitionTime: messageCond.LastTransitionTime,
-				Reason:             messageCond.Reason,
-				Message:            messageCond.Message,
-			}
-			for i, provCond := range status.Conditions {
-				if provCond.Type != string(messageCond.Type) {
-					continue
-				}
-				found = true
-				status.Conditions[i] = newCond
-			}
-			if !found {
-				status.Conditions = append(status.Conditions, newCond)
-			}
-		}
+		// Conditions now bubble up from PCIC to MCIC, so MCIC is the source of truth
+		// No longer copy conditions from MCIC to PCIC
 		status.AgentDeployed = v3.ClusterConditionAgentDeployed.IsTrue(existing)
 	}
 

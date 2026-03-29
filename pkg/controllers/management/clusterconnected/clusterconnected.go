@@ -126,7 +126,15 @@ func (c *checker) updateClusterConnectedCondition(cluster *v3.Cluster, connected
 			return err
 		}
 		Connected.SetStatusBool(latestCluster, connected)
-		if !connected && v3.ClusterConditionProvisioned.IsTrue(latestCluster) {
+
+		// For v2prov clusters, skip writing Ready when ControlPlaneReady is not True - provisioning controller owns Ready during that phase
+		isV2Prov := latestCluster.Status.Driver == v3.ClusterDriverRke2 || latestCluster.Status.Driver == v3.ClusterDriverK3s
+		shouldWriteReady := !connected && v3.ClusterConditionProvisioned.IsTrue(latestCluster)
+		if isV2Prov && !v3.ClusterConditionControlPlaneReady.IsTrue(latestCluster) {
+			shouldWriteReady = false
+		}
+
+		if shouldWriteReady {
 			v3.ClusterConditionReady.False(latestCluster)
 			v3.ClusterConditionReady.Reason(latestCluster, "Disconnected")
 			v3.ClusterConditionReady.Message(latestCluster, "Cluster agent is not connected")

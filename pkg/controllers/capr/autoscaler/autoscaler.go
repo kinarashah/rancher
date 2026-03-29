@@ -12,6 +12,7 @@ import (
 	"time"
 
 	fleet "github.com/rancher/fleet/pkg/apis/fleet.cattle.io/v1alpha1"
+	apimgmtv3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/rancher/pkg/capr"
 	"github.com/rancher/rancher/pkg/features"
 	"github.com/rancher/rancher/pkg/generated/controllers/cluster.x-k8s.io/v1beta2"
@@ -43,6 +44,8 @@ type autoscalerHandler struct {
 	clusterClient v2provcontrollers.ClusterClient
 	clusterCache  v2provcontrollers.ClusterCache
 
+	mgmtClusterCache mgmtcontrollers.ClusterCache
+
 	globalRoleClient mgmtcontrollers.GlobalRoleClient
 	globalRoleCache  mgmtcontrollers.GlobalRoleCache
 
@@ -70,6 +73,8 @@ func Register(ctx context.Context, clients *wrangler.CAPIContext) {
 	h := &autoscalerHandler{
 		clusterClient: clients.Provisioning.Cluster(),
 		clusterCache:  clients.Provisioning.Cluster().Cache(),
+
+		mgmtClusterCache: clients.Mgmt.Cluster().Cache(),
 
 		capiClusterCache:           clients.CAPI.Cluster().Cache(),
 		capiMachineCache:           clients.CAPI.Machine().Cache(),
@@ -316,9 +321,12 @@ func (h *autoscalerHandler) syncHelmOpStatus(_ string, helmOp *fleet.HelmOp) (*f
 		return helmOp, nil
 	}
 
-	// not populating the status condition on the cluster until the actual cluster is ready and the helm
-	// operation will be progressing
-	if !capr.Ready.IsTrue(cluster) {
+	// Check Ready condition on MCIC (source of truth) before populating status
+	mgmtCluster, err := h.mgmtClusterCache.Get(cluster.Status.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	if mgmtCluster == nil || !apimgmtv3.ClusterConditionReady.IsTrue(mgmtCluster) {
 		return helmOp, nil
 	}
 
