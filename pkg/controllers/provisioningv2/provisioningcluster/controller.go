@@ -361,12 +361,19 @@ func (h *handler) OnRancherClusterChange(obj *rancherv1.Cluster, status rancherv
 			reconcileCondition(&status, capr.Ready, rkeCP, capr.Ready)
 		}
 		if mgmtCluster != nil {
-			if !useRKEControlPlaneReadyStatus {
-				reconcileCondition(&status, capr.Ready, mgmtCluster, capr.Ready)
+			// Always copy Stable to MCIC so healthsyncer/clusterconnected can check it for handoff coordination
+			stableChanged := reconcileCondition(mgmtCluster, capr.Stable, rkeCP, capr.Stable)
+
+			// Set MCIC.Ready from rkeCP when !Stable (during provisioning)
+			// After Stable, healthsyncer/clusterconnected own MCIC.Ready
+			var readyChanged bool
+			if useRKEControlPlaneReadyStatus {
+				readyChanged = reconcileCondition(mgmtCluster, capr.Ready, rkeCP, capr.Ready)
 			}
+
 			updatedChanged := reconcileCondition(mgmtCluster, capr.Updated, rkeCP, capr.Ready)
 			provisionedChanged := reconcileCondition(mgmtCluster, capr.Provisioned, rkeCP, capr.Provisioned) // This was originally set by checking machine provisioning, but now we simply set it to true.
-			if updatedChanged || provisionedChanged {
+			if updatedChanged || provisionedChanged || readyChanged || stableChanged {
 				_, err := h.mgmtClusterClient.UpdateStatus(mgmtCluster)
 				if err != nil {
 					return nil, status, err

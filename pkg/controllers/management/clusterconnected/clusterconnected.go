@@ -127,9 +127,17 @@ func (c *checker) updateClusterConnectedCondition(cluster *v3.Cluster, connected
 		}
 		Connected.SetStatusBool(latestCluster, connected)
 		if !connected && v3.ClusterConditionProvisioned.IsTrue(latestCluster) {
-			v3.ClusterConditionReady.False(latestCluster)
-			v3.ClusterConditionReady.Reason(latestCluster, "Disconnected")
-			v3.ClusterConditionReady.Message(latestCluster, "Cluster agent is not connected")
+			// For RKE2 clusters, only set Ready=False when Stable.
+			// During provisioning (!Stable), provisioningcluster controller owns Ready.
+			// We detect RKE2 clusters by checking if the Stable condition exists (set by provisioningcluster).
+			hasStableCondition := capr.Stable.GetStatus(latestCluster) != ""
+			shouldSetReady := !hasStableCondition || capr.Stable.IsTrue(latestCluster)
+
+			if shouldSetReady {
+				v3.ClusterConditionReady.False(latestCluster)
+				v3.ClusterConditionReady.Reason(latestCluster, "Disconnected")
+				v3.ClusterConditionReady.Message(latestCluster, "Cluster agent is not connected")
+			}
 		}
 		logrus.Tracef("[clusterConnectedCondition] update cluster %v", cluster.Name)
 		_, err = c.clusters.UpdateStatus(latestCluster)

@@ -164,6 +164,17 @@ func (h *HealthSyncer) updateClusterHealth() error {
 		return nil
 	}
 
+	// For RKE2 clusters, only update Ready when Stable. During provisioning (!Stable),
+	// provisioningcluster controller owns the Ready condition.
+	// We detect RKE2 clusters by checking if the Stable condition exists (set by provisioningcluster).
+	hasStableCondition := capr.Stable.GetStatus(cluster) != ""
+	shouldUpdateReady := !hasStableCondition || capr.Stable.IsTrue(cluster)
+
+	if !shouldUpdateReady {
+		logrus.Debugf("Skip updating cluster health - RKE2 cluster [%s] not stable yet, provisioningcluster owns Ready", h.clusterName)
+		return nil
+	}
+
 	newObj, err := v32.ClusterConditionReady.Do(cluster, func() (runtime.Object, error) {
 		for i := 0; ; i++ {
 			err := h.getComponentStatus(cluster)
