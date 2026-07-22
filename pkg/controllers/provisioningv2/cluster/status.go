@@ -230,6 +230,11 @@ func (h *handler) getNodeCount(cluster *v3.Cluster, provCluster *v1.Cluster) (in
 }
 
 func (h *handler) getArch(cluster *v3.Cluster) (string, error) {
+	// mgmtNodesCache is only populated when MCM is enabled (nodes.management.cattle.io
+	// is an MCM-only CRD); skip arch detection if nodes cache is not initialized.
+	if h.mgmtNodesCache == nil {
+		return "", nil
+	}
 	machines, err := h.mgmtNodesCache.List(cluster.Name, labels.Everything())
 	if err != nil {
 		return "", err

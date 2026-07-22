@@ -560,3 +560,16 @@ func TestGetKubernetesProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestGetArch_MCMDisabled(t *testing.T) {
+	// When MCM is disabled, mgmtNodesCache is never wired up (nodes.management.cattle.io
+	// is an MCM-only CRD), so getArch must degrade gracefully instead of nil-dereferencing.
+	h := &handler{mgmtNodesCache: nil}
+
+	arch, err := h.getArch(&v3.Cluster{
+		ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, "", arch)
+}
